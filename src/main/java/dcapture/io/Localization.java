@@ -9,22 +9,29 @@ import java.util.*;
 
 public class Localization {
     private final Logger logger = Logger.getLogger(Localization.class);
-    private BaseSettings settings;
     private Map<String, Properties> localMap;
     private Set<String> languages;
+    private String language;
+    private File localeFolder;
 
-    public Localization(BaseSettings settings) {
-        this.settings = settings;
+    public void setLanguage(String lang) {
+        this.language = lang;
     }
 
-    private String getLanguage(String lang) {
-        if (languages == null) {
-            languages = settings.getLanguages();
-        }
-        if (lang == null || !languages.contains(lang)) {
-            return settings.getLanguage();
-        }
-        return lang;
+    public void setLanguages(Set<String> languages) {
+        this.languages = Collections.unmodifiableSet(languages);
+    }
+
+    public void setLocaleFolder(File localeFolder) {
+        this.localeFolder = localeFolder;
+    }
+
+    public String getLanguage(String lang) {
+        return lang == null || !languages.contains(lang) ? "en" : lang;
+    }
+
+    public String getLanguage() {
+        return language;
     }
 
     private Properties loadProperties(File localFile) {
@@ -56,12 +63,11 @@ public class Localization {
     private synchronized Map<String, Properties> getLocaleMap() {
         if (localMap == null) {
             Map<String, Properties> cache = new HashMap<>();
-            File localDir = settings.getLocalFolder();
             String[] extensions = new String[]{"properties"};
-            List<File> fileList = (List<File>) FileUtils.listFiles(localDir, extensions, true);
+            List<File> fileList = (List<File>) FileUtils.listFiles(localeFolder, extensions, true);
             for (File file : fileList) {
                 String lang = findLanguage(file);
-                Properties properties =  cache.get(lang);
+                Properties properties = cache.get(lang);
                 if (properties == null) {
                     properties = new Properties();
                     cache.put(lang, properties);
@@ -86,6 +92,6 @@ public class Localization {
     }
 
     public String get(String name) {
-        return get(settings.getLanguage(), name);
+        return get(language, name);
     }
 }

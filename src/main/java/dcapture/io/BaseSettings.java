@@ -2,42 +2,48 @@ package dcapture.io;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 public class BaseSettings {
-    private File root;
+    private File locale, webApp;
     private String version, language;
-    private int port;
     private Set<String> languages;
     private Map<String, String[]> databases;
+    private int port;
 
-    void setRoot(File root) {
-        this.root = root;
-    }
-
-    void setVersion(String version) {
-        this.version = version;
-    }
-
-    void setLanguage(String language) {
-        this.language = language;
-    }
-
-    void setPort(int port) {
-        this.port = port;
-    }
-
-    void setDatabase(Map<String, String[]> databases) {
-        this.databases = Collections.unmodifiableMap(databases);
-    }
-
-    void setLanguages(Set<String> languages) {
-        this.languages = languages;
-    }
-
-    public File getRoot() {
-        return root;
+    @SuppressWarnings("unchecked")
+    public void config(String name, Object value) {
+        name = name.trim().toLowerCase();
+        if (value instanceof String) {
+            String text = (String) value;
+            if ("version".equals(name)) {
+                this.version = text;
+            } else if ("language".equals(name)) {
+                this.language = text;
+            }
+        } else if (value instanceof Integer) {
+            int intValue = (Integer) value;
+            if ("port".equals(name)) {
+                this.port = intValue;
+            }
+        } else if (value instanceof Map) {
+            if ("database".equals(name)) {
+                this.databases = Collections.unmodifiableMap((Map<String, String[]>) value);
+            }
+        } else if (value instanceof File) {
+            File file = (File) value;
+            if ("locale".equals(name)) {
+                this.locale = file;
+            } else if ("webapp".equals(name)) {
+                this.webApp = file;
+            }
+        } else if (value instanceof Set) {
+            if ("languages".equals(name)) {
+                this.languages = Collections.unmodifiableSet((Set<String>) value);
+            }
+        }
     }
 
     public String getVersion() {
@@ -49,7 +55,7 @@ public class BaseSettings {
     }
 
     public Set<String> getLanguages() {
-        return languages;
+        return new HashSet<>(languages);
     }
 
     public int getPort() {
@@ -60,20 +66,11 @@ public class BaseSettings {
         return databases.get(name);
     }
 
-    public File getConfigFolder() {
-        return new File(root, "config");
-    }
-
-    public File getLocalFolder() {
-        File cfg = new File(root, "config");
-        return new File(cfg, "local");
-    }
-
-    public File getSysFolder() {
-        return new File(root, "sys");
+    public File getLocaleFolder() {
+        return locale;
     }
 
     public File getWebAppFolder() {
-        return new File(getSysFolder(), "webapp");
+        return webApp;
     }
 }

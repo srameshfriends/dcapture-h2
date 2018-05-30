@@ -4,39 +4,62 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.log4j.Logger;
 
-import javax.json.JsonArray;
-import javax.json.JsonObject;
+import javax.json.*;
 import java.io.File;
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 
 public class SettingsFactory {
     private static final Logger logger = Logger.getLogger(SettingsFactory.class);
 
-    public static BaseSettings loadBaseSettings(final File root) throws Exception {
-        logging("Root File : " + root.getPath());
-        File sourceSys = getClassPath("sys");
-        File sourceConfig = getClassPath("config");
-        File targetConfig = createDir(root, "config");
-        File targetSys = createDir(root, "sys");
-        FileUtils.copyDirectory(sourceConfig, targetConfig);
-        FileUtils.copyDirectory(sourceSys, targetSys);
-        createDir(root, "data");
-        File local = createDir(targetConfig, "local");
-        File settingsFile = new File(targetConfig, "settings.json");
-        JsonObject settingsObj = JsonMapper.readObject(settingsFile);
-        logging("Base Settings : " + settingsObj.toString());
-        String language = JsonMapper.getString(settingsObj, "language", "en");
-        String version = JsonMapper.getString(settingsObj, "version", "1.0");
-        int port = JsonMapper.getInt(settingsObj, "port");
-        port = 0 == port ? 9090 : port;
-        JsonArray dbCfgAry = JsonMapper.getJsonArray(settingsObj, "database");
+    public static BaseSettings loadBaseSetting(Class<?> classToGetPath, File jsonFile) throws Exception {
+        logging("Base Setting loading : " + jsonFile.getPath());
+        JsonObject obj = JsonMapper.readObject(jsonFile);
+        return loadBaseSetting(classToGetPath, obj);
+    }
+
+    public static BaseSettings loadBaseSetting(Class<?> classToGetPath, JsonObject obj) throws Exception {
+        BaseSettings settings = new BaseSettings();
+        for (Map.Entry<String, JsonValue> entry : obj.entrySet()) {
+            String key = entry.getKey().toLowerCase();
+            JsonValue jsonValue = entry.getValue();
+            if (jsonValue instanceof JsonString) {
+                String text = ((JsonString) jsonValue).getString();
+                if ("locale".equals(key)) {
+                    settings.config(key, getFile(classToGetPath, text));
+                } else if ("webapp".equals(key)) {
+                    settings.config(key, getFile(classToGetPath, text));
+                } else if ("config".equals(key)) {
+                    settings.config(key, getFile(classToGetPath, text));
+                } else {
+                    settings.config(key, text);
+                }
+            } else if (jsonValue instanceof JsonNumber) {
+                JsonNumber num = (JsonNumber) jsonValue;
+                settings.config(key, num.intValue());
+            } else if (jsonValue instanceof JsonArray) {
+                JsonArray array = (JsonArray) jsonValue;
+                if ("database".equals(key)) {
+                    settings.config(key, getDatabaseMap(array));
+                }
+            }
+        }
+        if (settings.getLocaleFolder() != null) {
+            settings.config("languages", getSupportedLanguage(settings.getLocaleFolder()));
+        }
+        if (settings.getLanguage() == null) {
+            settings.config("language", "en");
+        }
+        if (1 > settings.getPort()) {
+            settings.config("port", 9090);
+        }
+        return settings;
+    }
+
+    private static Map<String, String[]> getDatabaseMap(JsonArray array) {
         Map<String, String[]> databases = new HashMap<>();
-        List<JsonObject> dbObjList = dbCfgAry == null ? new ArrayList<>() : JsonMapper.getList(dbCfgAry);
+        List<JsonObject> dbObjList = array == null ? new ArrayList<>() : JsonMapper.getList(array);
         for (JsonObject db : dbObjList) {
             String dbName = JsonMapper.getString(db, "name");
             String dbUrl = JsonMapper.getString(db, "url");
@@ -46,38 +69,27 @@ public class SettingsFactory {
                 databases.put(dbName, new String[]{dbUrl, dbUser, dbPass});
             }
         }
-        BaseSettings base = new BaseSettings();
-        base.setRoot(root);
-        base.setLanguage(language);
-        base.setLanguages(getSupportedLanguage(local));
-        base.setPort(port);
-        base.setDatabase(databases);
-        base.setVersion(version);
-        return base;
+        return databases;
     }
 
-    private static File createDir(File parent, String extend) throws IOException {
-        File file = new File(parent, extend);
-        if (!file.exists()) {
-            Files.createDirectories(file.toPath());
+    private static File getFile(Class<?> classToGetPath, String configPath) throws URISyntaxException {
+        if (configPath.startsWith("classpath:")) {
+            String classPath = configPath.replaceFirst("classpath:", "");
+            return getClassPath(classToGetPath, classPath);
+        } else if (configPath.startsWith("absolute:")) {
+            String absolutePath = configPath.replaceFirst("absolute:", "");
+            return new File(absolutePath);
         }
-        return file;
+        return new File(configPath);
     }
 
-    private static File getClassPath(String path) {
-        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        URL url = classloader.getResource(path);
-        File uri = null;
-        try {
-            String uriPath = url == null ? null : Paths.get(url.toURI()).toString();
-            uri = uriPath == null ? null : new File(uriPath);
-        } catch (URISyntaxException ex) {
-            logging(ex);
+    public static File getClassPath(Class<?> classToGetPath, String path) {
+        ClassLoader classLoader = classToGetPath.getClassLoader();
+        URL url = classLoader.getResource(path);
+        if (url == null) {
+            throw new NullPointerException("Classpath file is missing : " + path);
         }
-        if (uri == null) {
-            throw new NullPointerException("Source not found at class path " + path);
-        }
-        return uri;
+        return new File(url.getFile());
     }
 
     private static Set<String> getSupportedLanguage(File localFolder) {
@@ -94,6 +106,22 @@ public class SettingsFactory {
             languageSet.add("en");
         }
         return languageSet;
+    }
+
+    public static Localization getLocalization(String defaultLanguage, File localeFolder) {
+        Localization localization = new Localization();
+        localization.setLanguage(defaultLanguage);
+        localization.setLocaleFolder(localeFolder);
+        localization.setLanguages(getSupportedLanguage(localeFolder));
+        return localization;
+    }
+
+    public static String decode(String value) {
+        return new String(Base64.getDecoder().decode(value));
+    }
+
+    public static String encode(String value) {
+        return Base64.getEncoder().encodeToString(value.getBytes());
     }
 
     private static String findLanguage(File file) {
