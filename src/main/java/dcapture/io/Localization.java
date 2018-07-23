@@ -1,97 +1,138 @@
 package dcapture.io;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import javax.json.*;
 import java.io.File;
 import java.io.FileInputStream;
+import java.net.URL;
+import java.nio.file.Paths;
 import java.util.*;
 
 public class Localization {
-    private final Logger logger = Logger.getLogger(Localization.class);
-    private Map<String, Properties> localMap;
-    private Set<String> languages;
+    private static final Logger logger = LogManager.getLogger(Localization.class);
+    private Map<String, Properties> cache;
     private String language;
-    private File localeFolder;
 
-    public void setLanguage(String lang) {
-        this.language = lang;
-    }
-
-    public void setLanguages(Set<String> languages) {
-        this.languages = Collections.unmodifiableSet(languages);
-    }
-
-    public void setLocaleFolder(File localeFolder) {
-        this.localeFolder = localeFolder;
-    }
-
-    public String getLanguage(String lang) {
-        return lang == null || !languages.contains(lang) ? "en" : lang;
+    private Localization() {
     }
 
     public String getLanguage() {
         return language;
     }
 
-    private Properties loadProperties(File localFile) {
-        if (!localFile.exists()) {
-            throw new NullPointerException(localFile.getAbsolutePath() + " file not found");
-        }
-        if (logger.isDebugEnabled()) {
-            logger.info("Loading Message : " + localFile);
-        }
-        Properties local = new Properties();
-        try {
-            FileInputStream stream = new FileInputStream(localFile);
-            local.load(stream);
-            stream.close();
-        } catch (Exception ex) {
-            if (logger.isDebugEnabled()) {
-                ex.printStackTrace();
-            }
-        }
-        return local;
-    }
-
-    private String findLanguage(File file) {
-        String name = file.getPath().replace(".properties", "");
-        int idx = name.lastIndexOf("-");
-        return name.substring(idx + 1, idx + 3);
-    }
-
-    private synchronized Map<String, Properties> getLocaleMap() {
-        if (localMap == null) {
-            Map<String, Properties> cache = new HashMap<>();
-            String[] extensions = new String[]{"properties"};
-            List<File> fileList = (List<File>) FileUtils.listFiles(localeFolder, extensions, true);
-            for (File file : fileList) {
-                String lang = findLanguage(file);
-                Properties properties = cache.get(lang);
-                if (properties == null) {
-                    properties = new Properties();
-                    cache.put(lang, properties);
-                }
-                properties.putAll(loadProperties(file));
-            }
-            localMap = Collections.unmodifiableMap(cache);
-        }
-        return localMap;
+    public Set<String> getLanguages() {
+        return cache.keySet();
     }
 
     public Properties getProperties(String lang) {
-        String language = getLanguage(lang);
-        return getLocaleMap().get(language);
+        return cache.get(lang == null ? language : lang);
     }
 
     public String get(String lang, String name) {
-        lang = getLanguage(lang);
-        Properties prop = getLocaleMap().get(lang);
+        Properties prop = cache.get(lang == null ? language : lang);
         String value = prop == null ? null : prop.getProperty(name);
         return value == null ? name : value;
     }
 
     public String get(String name) {
-        return get(language, name);
+        Properties prop = cache.get(language);
+        String value = prop == null ? null : prop.getProperty(name);
+        return value == null ? name : value;
+    }
+
+    public static Localization development(Class<?> classPath) throws Exception {
+        URL url = classPath.getResource("/locale");
+        if (url == null) {
+            throw new NullPointerException("locale folder not found at module class path : " + classPath.getName());
+        }
+        File localeFolder = Paths.get(url.toURI()).toFile();
+        if (logger.isDebugEnabled()) {
+            logger.info("Loading locale properties from : " + localeFolder);
+        }
+        Map<String, Properties> map = new HashMap<>();
+        String lang = "en";
+        JsonReader reader = Json.createReader(classPath.getResourceAsStream("/locale.json"));
+        JsonObject json = reader.readObject();
+        for (Map.Entry<String, JsonValue> entry : json.entrySet()) {
+            String key = entry.getKey().toLowerCase();
+            JsonValue jsonValue = entry.getValue();
+            if (jsonValue instanceof JsonString && "language".equals(key)) {
+                lang = ((JsonString) jsonValue).getString().trim();
+                if (notValid(lang)) {
+                    lang = "en";
+                }
+            } else if (jsonValue instanceof JsonArray) {
+                map.put(key, development(localeFolder, (JsonArray) jsonValue));
+            }
+        }
+        Localization localization = new Localization();
+        localization.language = lang;
+        localization.cache = Collections.unmodifiableMap(map);
+        return localization;
+    }
+
+    private static synchronized Properties development(File folder, JsonArray array) throws Exception {
+        Properties properties = new Properties();
+        for (JsonValue json : array) {
+            if (json instanceof JsonString) {
+                String name = ((JsonString) json).getString();
+                File file = new File(folder, "/" + name);
+                logger.info("Locale File Loading : " + file);
+                properties.load(new FileInputStream(file));
+            }
+        }
+        return properties;
+    }
+
+    public static Localization load(Class<?> classPath) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.info("Localization configuration reading from " + classPath.getResource("/locale.json"));
+        }
+        Map<String, Properties> map = new HashMap<>();
+        String lang = "en";
+        JsonReader reader = Json.createReader(classPath.getResourceAsStream("/locale.json"));
+        JsonObject json = reader.readObject();
+        for (Map.Entry<String, JsonValue> entry : json.entrySet()) {
+            String key = entry.getKey().toLowerCase();
+            JsonValue jsonValue = entry.getValue();
+            if (jsonValue instanceof JsonString && "language".equals(key)) {
+                lang = ((JsonString) jsonValue).getString().trim();
+                if (notValid(lang)) {
+                    lang = "en";
+                }
+            } else if (jsonValue instanceof JsonArray) {
+                map.put(key, loadProperties(classPath, (JsonArray) jsonValue));
+            }
+        }
+        Localization localization = new Localization();
+        localization.language = lang;
+        localization.cache = Collections.unmodifiableMap(map);
+        if (logger.isDebugEnabled()) {
+            for (Map.Entry<String, Properties> entry : map.entrySet()) {
+                logger.info("Localization language for  [" + entry.getKey()
+                        + "] properties count : " + entry.getValue().size());
+            }
+        }
+        return localization;
+    }
+
+    private static synchronized Properties loadProperties(Class<?> classPath, JsonArray array) throws Exception {
+        Properties properties = new Properties();
+        for (JsonValue json : array) {
+            if (json instanceof JsonString) {
+                String name = ((JsonString) json).getString();
+                if (logger.isDebugEnabled()) {
+                    logger.info(classPath.getName() + " >> " + classPath.getResource("/locale/" + name));
+                }
+                properties.load(classPath.getResourceAsStream("/locale/" + name));
+            }
+        }
+        return properties;
+    }
+
+    private static boolean notValid(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

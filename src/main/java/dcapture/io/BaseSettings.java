@@ -1,76 +1,138 @@
 package dcapture.io;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.HashSet;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.json.*;
+import java.util.Base64;
 import java.util.Map;
-import java.util.Set;
 
 public class BaseSettings {
-    private File locale, webApp;
-    private String version, language;
-    private Set<String> languages;
-    private Map<String, String[]> databases;
+    private static final Logger logger = LogManager.getLogger(BaseSettings.class);
+    private String version;
+    private String databaseName, databaseUrl, databaseUser, databasePassword;
+    private JsonArray databaseConfig;
     private int port;
 
-    @SuppressWarnings("unchecked")
-    public void config(String name, Object value) {
-        name = name.trim().toLowerCase();
-        if (value instanceof String) {
-            String text = (String) value;
-            if ("version".equals(name)) {
-                this.version = text;
-            } else if ("language".equals(name)) {
-                this.language = text;
-            }
-        } else if (value instanceof Integer) {
-            int intValue = (Integer) value;
-            if ("port".equals(name)) {
-                this.port = intValue;
-            }
-        } else if (value instanceof Map) {
-            if ("database".equals(name)) {
-                this.databases = Collections.unmodifiableMap((Map<String, String[]>) value);
-            }
-        } else if (value instanceof File) {
-            File file = (File) value;
-            if ("locale".equals(name)) {
-                this.locale = file;
-            } else if ("webapp".equals(name)) {
-                this.webApp = file;
-            }
-        } else if (value instanceof Set) {
-            if ("languages".equals(name)) {
-                this.languages = Collections.unmodifiableSet((Set<String>) value);
-            }
-        }
+    private BaseSettings() {
     }
 
     public String getVersion() {
         return version;
     }
 
-    public String getLanguage() {
-        return language;
-    }
-
-    public Set<String> getLanguages() {
-        return new HashSet<>(languages);
-    }
-
     public int getPort() {
         return port;
     }
 
-    public String[] getDatabase(String name) {
-        return databases.get(name);
+    public String getDatabaseName() {
+        return databaseName;
     }
 
-    public File getLocaleFolder() {
-        return locale;
+    public String getDatabaseUrl() {
+        return databaseUrl;
     }
 
-    public File getWebAppFolder() {
-        return webApp;
+    public String getDatabaseUser() {
+        return databaseUser;
+    }
+
+    public String getDatabasePassword() {
+        return databasePassword;
+    }
+
+    public JsonArray getDatabaseConfig() {
+        return databaseConfig;
+    }
+
+    public static BaseSettings load(Class<?> classPath) throws Exception {
+        BaseSettings settings = new BaseSettings();
+        settings.version = "1.0";
+        settings.port = 9090;
+        JsonReader settingsReader = Json.createReader(classPath.getResourceAsStream("/settings.json"));
+        JsonObject settingsJson = settingsReader.readObject();
+        for (Map.Entry<String, JsonValue> entry : settingsJson.entrySet()) {
+            String key = entry.getKey().toLowerCase();
+            JsonValue jsonValue = entry.getValue();
+            if (jsonValue instanceof JsonString) {
+                String text = ((JsonString) jsonValue).getString().trim();
+                if (notValid(text)) {
+                    throw new IllegalArgumentException("Base settings key [" + key + "] is not valid data!");
+                }
+                if ("database".equals(key)) {
+                    String[] dbs = getDatabaseSettings(text);
+                    settings.databaseName = dbs[0];
+                    settings.databaseUrl = dbs[1];
+                    settings.databaseUser = dbs[2];
+                    settings.databasePassword = dbs[3];
+                } else if ("version".equals(key)) {
+                    settings.version = text.trim();
+                } else if ("port".equals(key)) {
+                    settings.port = parsePort(text);
+                }
+            } else if (jsonValue instanceof JsonNumber) {
+                if ("port".equals(key)) {
+                    JsonNumber num = (JsonNumber) jsonValue;
+                    settings.port = 1 > num.intValue() ? 9090 : num.intValue();
+                }
+            }
+        }
+        if (settings.databaseName != null) {
+            String dbCfgPath = "/" + settings.databaseName + ".json";
+            if (logger.isDebugEnabled()) {
+                logger.info("Database configuration reading from " + classPath.getResource(dbCfgPath));
+            }
+            JsonReader dbCfgReader = Json.createReader(classPath.getResourceAsStream(dbCfgPath));
+            settings.databaseConfig = dbCfgReader.readArray();
+        }
+        return settings;
+    }
+
+    private static String[] getDatabaseSettings(String compact) {
+        String[] values = compact.trim().split(" ");
+        if (4 > values.length) {
+            throw new IllegalArgumentException("Database user and password should be encrypted, and format is : " +
+                    "name [space] url [space] userName [space] password");
+        }
+        if (notValid(values[0])) {
+            throw new IllegalArgumentException("Database name not valid");
+        }
+        if (notValid(values[1])) {
+            throw new IllegalArgumentException("Database url not valid");
+        }
+        if (notValid(values[2])) {
+            throw new IllegalArgumentException("Database user not valid");
+        }
+        if (notValid(values[3])) {
+            throw new IllegalArgumentException("Database password not valid");
+        }
+        return new String[]{values[0].trim(), values[1].trim(), values[2].trim(), values[3].trim()};
+    }
+
+    public static String decode(String value) {
+        return new String(Base64.getDecoder().decode(value));
+    }
+
+    public static String encode(String value) {
+        return Base64.getEncoder().encodeToString(value.getBytes());
+    }
+
+    private static int parsePort(String value) {
+        try {
+            int prt = Integer.parseInt(value);
+            return 1 > prt ? 9090 : prt;
+        } catch (NumberFormatException ex) {
+            if (logger.isDebugEnabled()) {
+                logger.error("Base settings port not valid");
+                ex.printStackTrace();
+            } else {
+                logger.error("Base settings port not valid : " + value);
+            }
+        }
+        return 9090;
+    }
+
+    private static boolean notValid(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

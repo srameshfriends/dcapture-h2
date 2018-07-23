@@ -1,9 +1,8 @@
 package dcapture.io;
 
-import com.sun.deploy.net.HttpRequest;
-import com.sun.deploy.net.HttpResponse;
 import io.github.pustike.inject.Injector;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.json.*;
 import javax.servlet.*;
@@ -15,7 +14,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 public class DispatcherServlet extends GenericServlet {
-    private final Logger logger = Logger.getLogger(DispatcherServlet.class);
+    private final Logger logger = LogManager.getLogger(DispatcherServlet.class);
     private final Set<String> acceptedContentTypeSet;
     private Map<String, Dispatcher> dispatcherMap;
     private Injector injector;

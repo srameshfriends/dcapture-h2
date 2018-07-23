@@ -1,12 +1,13 @@
 package dcapture.io;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 public class HtmlResponse extends HttpServletResponseWrapper {
-    private final Logger logger = Logger.getLogger(HtmlResponse.class);
+    private final Logger logger = LogManager.getLogger(HtmlResponse.class);
 
     public HtmlResponse(HttpServletResponse response) {
         super(response);

@@ -1,4 +1,4 @@
-package dcapture.io.dev;
+package dcapture.io;
 
 import java.io.File;
 import java.util.HashMap;
@@ -74,11 +74,11 @@ public class FileMonitor implements Runnable {
         }
     }
 
-    boolean isRunning() {
+    public boolean isRunning() {
         return runningService;
     }
 
-    void stop() {
+    public void stop() {
         runningService = false;
     }
 

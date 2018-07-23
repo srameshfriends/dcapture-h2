@@ -1,7 +1,8 @@
 package dcapture.io;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.json.*;
 import javax.servlet.http.HttpServletRequest;
@@ -11,7 +12,7 @@ import java.io.StringWriter;
 import java.nio.charset.Charset;
 
 public class JsonRequest extends HttpServletRequestWrapper {
-    private static final Logger logger = Logger.getLogger(JsonRequest.class);
+    private static final Logger logger = LogManager.getLogger(JsonRequest.class);
     private JsonArray bodyArray;
     private JsonObject bodyObject;
 

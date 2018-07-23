@@ -4,7 +4,8 @@ import io.github.pustike.inject.Injector;
 import io.github.pustike.inject.Injectors;
 import io.github.pustike.inject.bind.Binder;
 import io.github.pustike.inject.bind.Module;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.inject.Singleton;
 import javax.servlet.ServletContext;
@@ -21,7 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class DispatcherListener implements ServletContextListener {
-    private final Logger logger = Logger.getLogger(DispatcherListener.class);
+    private final Logger logger = LogManager.getLogger(DispatcherListener.class);
     private DispatcherRegistry registry;
 
     public void setRegistry(DispatcherRegistry registry) {
