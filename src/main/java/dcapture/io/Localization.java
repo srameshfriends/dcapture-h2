@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.net.URL;
 import java.nio.file.Paths;
+import java.text.MessageFormat;
 import java.util.*;
 
 public class Localization {
@@ -40,6 +41,12 @@ public class Localization {
         Properties prop = cache.get(language);
         String value = prop == null ? null : prop.getProperty(name);
         return value == null ? name : value;
+    }
+
+    public String getMessage(String name, Object... args) {
+        Properties prop = cache.get(language);
+        String value = prop == null ? null : prop.getProperty(name);
+        return value != null ? MessageFormat.format(value, args) : name;
     }
 
     public static Localization development(Class<?> classPath) throws Exception {

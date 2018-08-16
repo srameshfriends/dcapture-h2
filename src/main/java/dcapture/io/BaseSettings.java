@@ -9,12 +9,20 @@ import java.util.Map;
 
 public class BaseSettings {
     private static final Logger logger = LogManager.getLogger(BaseSettings.class);
-    private String version;
+    private String version, id, name;
     private String databaseName, databaseUrl, databaseUser, databasePassword;
     private JsonArray databaseConfig;
     private int port;
 
     private BaseSettings() {
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public String getVersion() {
@@ -59,14 +67,18 @@ public class BaseSettings {
                 if (notValid(text)) {
                     throw new IllegalArgumentException("Base settings key [" + key + "] is not valid data!");
                 }
-                if ("database".equals(key)) {
+                if ("id".equals(key)) {
+                    settings.id = text;
+                } else if ("name".equals(key)) {
+                    settings.name = text;
+                } else if ("database".equals(key)) {
                     String[] dbs = getDatabaseSettings(text);
                     settings.databaseName = dbs[0];
                     settings.databaseUrl = dbs[1];
                     settings.databaseUser = dbs[2];
                     settings.databasePassword = dbs[3];
                 } else if ("version".equals(key)) {
-                    settings.version = text.trim();
+                    settings.version = text;
                 } else if ("port".equals(key)) {
                     settings.port = parsePort(text);
                 }

@@ -1,21 +1,21 @@
 package dcapture.io;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class FileMonitor implements Runnable {
-    private final File folder;
-    private final FileMonitorListener listener;
+public class FileMonitor implements Runnable, FileMonitorListener {
+    private final File source;
+    private final String sourcePrefix, targetPrefix;
+    private FileMonitorListener listener;
     private Map<String, FileMonitorModel> fileServiceMap;
     private boolean runningService, ignoreListener;
     private Set<String> ignoredFolderSet;
-
-    public interface FileMonitorListener {
-        void onFileMonitorEvent(String type, File file);
-    }
 
     private class FileMonitorModel {
         private final File file;
@@ -43,20 +43,26 @@ public class FileMonitor implements Runnable {
         }
     }
 
-    public FileMonitor(File folder, FileMonitorListener listener) {
-        this.folder = folder;
-        this.listener = listener;
-        if (folder == null || !folder.exists() || !folder.isDirectory()) {
-            throw new NullPointerException("Folder should not be empty");
+    public FileMonitor(File source, File target) {
+        if (source == null || !source.exists() || !source.isDirectory()) {
+            throw new NullPointerException("Source directory should not be empty");
         }
-        if (listener == null) {
-            throw new NullPointerException("Listener should not be empty");
+        if (target == null || !target.exists() || !target.isDirectory()) {
+            throw new NullPointerException("Target directory should not be empty");
         }
+        this.source = source;
+        sourcePrefix = source.getAbsolutePath();
+        targetPrefix = target.getAbsolutePath();
+        this.listener = this;
+    }
+
+    public void setListener(FileMonitorListener listener) {
+        this.listener = listener == null ? this : listener;
     }
 
     @Override
     public void run() {
-        File ideaIgnoreFile = new File(folder.getAbsolutePath() + File.separator + ".idea");
+        File ideaIgnoreFile = new File(source.getAbsolutePath() + File.separator + ".idea");
         ignoredFolderSet = new HashSet<>();
         ignoredFolderSet.add(ideaIgnoreFile.getAbsolutePath());
         fileServiceMap = new HashMap<>();
@@ -84,8 +90,8 @@ public class FileMonitor implements Runnable {
 
     private void monitor() {
         Set<String> monitoredItemsSet = new HashSet<>();
-        if (folder.exists() && folder.isDirectory()) {
-            File[] fileArray = folder.listFiles();
+        if (source.exists() && source.isDirectory()) {
+            File[] fileArray = source.listFiles();
             if (fileArray != null && 0 < fileArray.length) {
                 monitorFiles(fileArray, monitoredItemsSet);
                 for (File file : fileArray) {
@@ -104,7 +110,7 @@ public class FileMonitor implements Runnable {
             fileServiceMap.entrySet().stream().filter(entry -> !monitoredItemsSet.contains( //
                     entry.getKey()) && !entry.getValue().exists()).forEach(entry -> {
                 if (!ignoreListener) {
-                    listener.onFileMonitorEvent("Deleted", entry.getValue().getFile());
+                    listener.onFileMonitor("Deleted", entry.getValue().getFile());
                 }
                 deletedSet.add(entry.getKey());
             });
@@ -135,15 +141,40 @@ public class FileMonitor implements Runnable {
             if (existing == null) {
                 fileServiceMap.put(file.getAbsolutePath(), new FileMonitorModel(file));
                 if (!ignoreListener) {
-                    listener.onFileMonitorEvent("Created", file);
+                    listener.onFileMonitor("Created", file);
                 }
             } else if (existing.isModified()) {
                 existing.updateLastModified();
                 if (!ignoreListener) {
-                    listener.onFileMonitorEvent("Modified", file);
+                    listener.onFileMonitor("Modified", file);
                 }
             }
             monitoredItemsSet.add(file.getAbsolutePath());
         }
+    }
+
+    @Override
+    public void onFileMonitor(String type, File file) {
+        System.out.println("File has " + type + " \t " + file);
+        try {
+            String target = file.getAbsolutePath().replace(sourcePrefix, targetPrefix);
+            if ("Modified".equals(type)) {
+                Files.copy(file.toPath(), Paths.get(target), StandardCopyOption.REPLACE_EXISTING);
+            } else if("Created".equals(type)) {
+                Files.copy(file.toPath(), Paths.get(target));
+            } else if ("Deleted".equals(type)) {
+                Files.delete(Paths.get(target));
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public static void main(String... args) {
+        if (2 > args.length) {
+            throw new IllegalArgumentException("Source and target directory path not configured!");
+        }
+        FileMonitor fileMonitor = new FileMonitor(new File(args[0]), new File(args[1]));
+        fileMonitor.run();
     }
 }

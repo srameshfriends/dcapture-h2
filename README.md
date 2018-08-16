@@ -28,5 +28,10 @@ IM01
 - >Apache Log4j2 is used for logging
 - >Git ignore file is added
 
+IM02
 
+- >Settings user id and name are added
+- >Json response issue are fixed 
+- >Localization : getMessage() method is returned as formatted value. 
+- >File Monitor main method added
 

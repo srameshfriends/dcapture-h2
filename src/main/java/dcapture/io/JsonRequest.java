@@ -8,23 +8,28 @@ import javax.json.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.nio.charset.Charset;
 
 public class JsonRequest extends HttpServletRequestWrapper {
     private static final Logger logger = LogManager.getLogger(JsonRequest.class);
     private JsonArray bodyArray;
     private JsonObject bodyObject;
+    private JsonValue bodyValue;
 
     JsonRequest(HttpServletRequest request) {
         super(request);
         try {
             JsonReader reader = Json.createReader(request.getInputStream());
-            JsonStructure body = reader.read();
-            if (body instanceof JsonObject) {
-                bodyObject = (JsonObject) body;
-            } else if (body instanceof JsonArray) {
-                bodyArray = (JsonArray) body;
+            JsonValue value = reader.readValue();
+            if (value instanceof JsonObject) {
+                bodyObject = (JsonObject) value;
+            } else if (value instanceof JsonArray) {
+                bodyArray = (JsonArray) value;
+            } else {
+                bodyValue = value;
             }
         } catch (Exception ex) {
             if (logger.isDebugEnabled()) {
@@ -41,6 +46,10 @@ public class JsonRequest extends HttpServletRequestWrapper {
         return bodyArray;
     }
 
+    public JsonValue getJsonValue() {
+        return bodyValue;
+    }
+
     public String getContent() {
         StringWriter writer = new StringWriter();
         try {
@@ -51,6 +60,15 @@ public class JsonRequest extends HttpServletRequestWrapper {
             }
         }
         return writer.toString();
+    }
+
+    private long copyLarge(Reader input, Writer output, char[] buffer) throws IOException {
+        long count;
+        int n;
+        for(count = 0L; -1 != (n = input.read(buffer)); count += (long)n) {
+            output.write(buffer, 0, n);
+        }
+        return count;
     }
 
     public String getString(String key) {
