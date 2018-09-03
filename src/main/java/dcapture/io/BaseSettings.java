@@ -1,14 +1,12 @@
 package dcapture.io;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.json.*;
 import java.util.Base64;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class BaseSettings {
-    private static final Logger logger = LogManager.getLogger(BaseSettings.class);
+    private static Logger logger = Logger.getLogger("dcapture.io");
     private String version, id, name;
     private String databaseName, databaseUrl, databaseUser, databasePassword;
     private JsonArray databaseConfig;
@@ -91,9 +89,7 @@ public class BaseSettings {
         }
         if (settings.databaseName != null) {
             String dbCfgPath = "/" + settings.databaseName + ".json";
-            if (logger.isDebugEnabled()) {
-                logger.info("Database configuration reading from " + classPath.getResource(dbCfgPath));
-            }
+            logger.severe("Database configuration reading from " + classPath.getResource(dbCfgPath));
             JsonReader dbCfgReader = Json.createReader(classPath.getResourceAsStream(dbCfgPath));
             settings.databaseConfig = dbCfgReader.readArray();
         }
@@ -134,12 +130,7 @@ public class BaseSettings {
             int prt = Integer.parseInt(value);
             return 1 > prt ? 9090 : prt;
         } catch (NumberFormatException ex) {
-            if (logger.isDebugEnabled()) {
-                logger.error("Base settings port not valid");
-                ex.printStackTrace();
-            } else {
-                logger.error("Base settings port not valid : " + value);
-            }
+            logger.severe("Base settings port not valid");
         }
         return 9090;
     }

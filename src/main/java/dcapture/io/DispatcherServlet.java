@@ -1,8 +1,6 @@
 package dcapture.io;
 
 import io.github.pustike.inject.Injector;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.json.*;
 import javax.servlet.*;
@@ -12,9 +10,10 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.logging.Logger;
 
 public class DispatcherServlet extends GenericServlet {
-    private final Logger logger = LogManager.getLogger(DispatcherServlet.class);
+    private static Logger logger = Logger.getLogger("dcapture.io");
     private final Set<String> acceptedContentTypeSet;
     private Map<String, Dispatcher> dispatcherMap;
     private Injector injector;
@@ -79,18 +78,14 @@ public class DispatcherServlet extends GenericServlet {
             Localization localization = injector.getInstance(Localization.class);
             String msg = localization.get(ex.getLanguage(), ex.getMessage());
             error(cType, msg, response);
-            if (logger.isDebugEnabled()) {
-                ex.printStackTrace();
-            }
+            ex.printStackTrace();
         } catch (Exception ex) {
             String message = ex.getMessage();
             if (message == null) {
                 message = ex.getCause() == null ? "Unknown Error" : ex.getCause().getMessage();
             }
             error(cType, message, response);
-            if (logger.isDebugEnabled()) {
-                ex.printStackTrace();
-            }
+            ex.printStackTrace();
         }
     }
 
@@ -101,8 +96,6 @@ public class DispatcherServlet extends GenericServlet {
             return getRequestJsonObject(url, req);
         } else if (JsonArray.class.equals(pCls)) {
             return getRequestJsonArray(url, req);
-        } else if (JsonRequest.class.equals(pCls)) {
-            return new JsonRequest(req);
         } else if (JsonResponse.class.equals(pCls)) {
             return new JsonResponse(res);
         } else if (HtmlRequest.class.equals(pCls)) {
@@ -126,9 +119,7 @@ public class DispatcherServlet extends GenericServlet {
             JsonReader reader = Json.createReader(request.getInputStream());
             return reader.readObject();
         } catch (Exception ex) {
-            if (logger.isDebugEnabled()) {
-                logger.warn(pathInfo + " \t Http Request JsonObject format error  : " + ex.getMessage());
-            }
+            ex.printStackTrace();
         }
         return Json.createObjectBuilder().build();
     }
@@ -138,9 +129,7 @@ public class DispatcherServlet extends GenericServlet {
             JsonReader reader = Json.createReader(request.getInputStream());
             return reader.readArray();
         } catch (Exception ex) {
-            if (logger.isDebugEnabled()) {
-                logger.warn(pathInfo + " \t Http Request JsonArray format error  : " + ex.getMessage());
-            }
+            logger.severe(pathInfo + " \t Http Request JsonArray format error  : " + ex.getMessage());
         }
         return null;
     }
@@ -176,10 +165,8 @@ public class DispatcherServlet extends GenericServlet {
             response.getWriter().write(result == null ? "" : result.toString());
             response.getWriter().close();
         } catch (Exception ex) {
-            if (logger.isDebugEnabled()) {
-                ex.printStackTrace();
-            }
             error(ContentType.Html, ex.getMessage(), response);
+            ex.printStackTrace();
         }
     }
 
@@ -204,9 +191,7 @@ public class DispatcherServlet extends GenericServlet {
                 response.getWriter().close();
             }
         } catch (Exception ex) {
-            if (logger.isDebugEnabled()) {
-                ex.printStackTrace();
-            }
+            ex.printStackTrace();
             errorAsJson(ex.getMessage(), response);
         }
     }

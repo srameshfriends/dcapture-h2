@@ -1,13 +1,11 @@
 package dcapture.io;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
+import java.util.logging.Logger;
 
 public class HtmlResponse extends HttpServletResponseWrapper {
-    private final Logger logger = LogManager.getLogger(HtmlResponse.class);
+    private static Logger logger = Logger.getLogger("dcapture.io");
 
     public HtmlResponse(HttpServletResponse response) {
         super(response);
@@ -57,9 +55,7 @@ public class HtmlResponse extends HttpServletResponseWrapper {
             getWriter().write(text);
             getWriter().close();
         } catch (Exception ex) {
-            if (logger.isDebugEnabled()) {
-                ex.printStackTrace();
-            }
+            ex.printStackTrace();
         }
     }
 }

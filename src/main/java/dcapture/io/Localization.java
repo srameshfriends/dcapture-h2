@@ -1,8 +1,5 @@
 package dcapture.io;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.json.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -10,9 +7,10 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.logging.Logger;
 
 public class Localization {
-    private static final Logger logger = LogManager.getLogger(Localization.class);
+    private static Logger logger = Logger.getLogger("dcapture.io");
     private Map<String, Properties> cache;
     private String language;
 
@@ -55,9 +53,7 @@ public class Localization {
             throw new NullPointerException("locale folder not found at module class path : " + classPath.getName());
         }
         File localeFolder = Paths.get(url.toURI()).toFile();
-        if (logger.isDebugEnabled()) {
-            logger.info("Loading locale properties from : " + localeFolder);
-        }
+        logger.severe("Loading locale properties from : " + localeFolder);
         Map<String, Properties> map = new HashMap<>();
         String lang = "en";
         JsonReader reader = Json.createReader(classPath.getResourceAsStream("/locale.json"));
@@ -86,7 +82,7 @@ public class Localization {
             if (json instanceof JsonString) {
                 String name = ((JsonString) json).getString();
                 File file = new File(folder, "/" + name);
-                logger.info("Locale File Loading : " + file);
+                logger.severe("Locale File Loading : " + file);
                 properties.load(new FileInputStream(file));
             }
         }
@@ -94,9 +90,7 @@ public class Localization {
     }
 
     public static Localization load(Class<?> classPath) throws Exception {
-        if (logger.isDebugEnabled()) {
-            logger.info("Localization configuration reading from " + classPath.getResource("/locale.json"));
-        }
+        logger.severe("Localization configuration reading from " + classPath.getResource("/locale.json"));
         Map<String, Properties> map = new HashMap<>();
         String lang = "en";
         JsonReader reader = Json.createReader(classPath.getResourceAsStream("/locale.json"));
@@ -116,11 +110,9 @@ public class Localization {
         Localization localization = new Localization();
         localization.language = lang;
         localization.cache = Collections.unmodifiableMap(map);
-        if (logger.isDebugEnabled()) {
-            for (Map.Entry<String, Properties> entry : map.entrySet()) {
-                logger.info("Localization language for  [" + entry.getKey()
-                        + "] properties count : " + entry.getValue().size());
-            }
+        for (Map.Entry<String, Properties> entry : map.entrySet()) {
+            logger.severe("Localization language for  [" + entry.getKey()
+                    + "] properties count : " + entry.getValue().size());
         }
         return localization;
     }
@@ -130,9 +122,7 @@ public class Localization {
         for (JsonValue json : array) {
             if (json instanceof JsonString) {
                 String name = ((JsonString) json).getString();
-                if (logger.isDebugEnabled()) {
-                    logger.info(classPath.getName() + " >> " + classPath.getResource("/locale/" + name));
-                }
+                logger.severe(classPath.getName() + " >> " + classPath.getResource("/locale/" + name));
                 properties.load(classPath.getResourceAsStream("/locale/" + name));
             }
         }

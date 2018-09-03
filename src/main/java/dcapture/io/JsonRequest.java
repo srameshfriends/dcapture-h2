@@ -1,8 +1,6 @@
 package dcapture.io;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.json.*;
 import javax.servlet.http.HttpServletRequest;
@@ -12,9 +10,10 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.util.logging.Logger;
 
 public class JsonRequest extends HttpServletRequestWrapper {
-    private static final Logger logger = LogManager.getLogger(JsonRequest.class);
+    private static Logger logger = Logger.getLogger("dcapture.io");
     private JsonArray bodyArray;
     private JsonObject bodyObject;
     private JsonValue bodyValue;
@@ -32,9 +31,7 @@ public class JsonRequest extends HttpServletRequestWrapper {
                 bodyValue = value;
             }
         } catch (Exception ex) {
-            if (logger.isDebugEnabled()) {
-                ex.printStackTrace();
-            }
+            ex.printStackTrace();
         }
     }
 
@@ -54,10 +51,8 @@ public class JsonRequest extends HttpServletRequestWrapper {
         StringWriter writer = new StringWriter();
         try {
             IOUtils.copy(getInputStream(), writer, Charset.forName("UTF-8"));
-        } catch (IOException e) {
-            if (logger.isDebugEnabled()) {
-                e.printStackTrace();
-            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
         }
         return writer.toString();
     }

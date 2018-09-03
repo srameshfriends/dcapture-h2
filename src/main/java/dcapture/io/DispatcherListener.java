@@ -4,8 +4,6 @@ import io.github.pustike.inject.Injector;
 import io.github.pustike.inject.Injectors;
 import io.github.pustike.inject.bind.Binder;
 import io.github.pustike.inject.bind.Module;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Singleton;
 import javax.servlet.ServletContext;
@@ -20,9 +18,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.logging.Logger;
 
 public class DispatcherListener implements ServletContextListener {
-    private final Logger logger = LogManager.getLogger(DispatcherListener.class);
+    private static Logger logger = Logger.getLogger("dcapture.io");
     private DispatcherRegistry registry;
 
     public void setRegistry(DispatcherRegistry registry) {
@@ -48,7 +47,7 @@ public class DispatcherListener implements ServletContextListener {
         ServletContext context = sce.getServletContext();
         Injector injector = (Injector) context.getAttribute(Injector.class.getName());
         registry.destroyed(injector);
-        log("database stopped");
+        logger.severe("database stopped");
         Injectors.dispose(injector);
     }
 
@@ -79,7 +78,7 @@ public class DispatcherListener implements ServletContextListener {
             String path = pathPrefix + pathSuffix;
             String httpMethod = findHttpMethod(method);
             serviceMap.put(path.toLowerCase(), new Dispatcher(path, httpMethod, method));
-            log("Path Service : " + path.toLowerCase());
+            logger.severe("Path Service : " + path.toLowerCase());
         }
     }
 
@@ -148,12 +147,6 @@ public class DispatcherListener implements ServletContextListener {
                     throw new IllegalArgumentException(cls + " >> " + method + " >> response logic error");
                 }
             }
-        }
-    }
-
-    private void log(String message) {
-        if (logger.isDebugEnabled()) {
-            logger.info(message);
         }
     }
 

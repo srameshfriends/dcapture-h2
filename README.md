@@ -35,3 +35,10 @@ IM02
 - >Localization : getMessage() method is returned as formatted value. 
 - >File Monitor main method added
 
+##### Sep-2018
+
+IM03
+
+- >Log4j2 is removed default java logging is used
+- >Paging removed, FormModel is added
+

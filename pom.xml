@@ -11,7 +11,6 @@
     <properties>
         <maven.compiler.source>10</maven.compiler.source>
         <maven.compiler.target>10</maven.compiler.target>
-        <log4j>2.11.0</log4j>
         <commons-io>2.6</commons-io>
         <pustike-inject>1.4.2</pustike-inject>
         <jetty>9.4.11.v20180605</jetty>
@@ -21,18 +20,6 @@
     </properties>
 
     <dependencies>
-
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-            <version>${log4j}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>${log4j}</version>
-        </dependency>
 
         <dependency>
             <groupId>commons-io</groupId>

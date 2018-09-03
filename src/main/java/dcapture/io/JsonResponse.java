@@ -1,8 +1,5 @@
 package dcapture.io;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
@@ -11,7 +8,6 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import java.io.IOException;
 
 public class JsonResponse extends HttpServletResponseWrapper {
-    private final Logger logger = LogManager.getLogger(JsonResponse.class);
 
     public JsonResponse(HttpServletResponse response) {
         super(response);
@@ -50,9 +46,7 @@ public class JsonResponse extends HttpServletResponseWrapper {
             getWriter().write(title);
             getWriter().close();
         } catch (Exception ex) {
-            if (logger.isDebugEnabled()) {
-                ex.printStackTrace();
-            }
+            ex.printStackTrace();
             try {
                 sendError(SC_INTERNAL_SERVER_ERROR);
             } catch (IOException e) {
@@ -76,9 +70,7 @@ public class JsonResponse extends HttpServletResponseWrapper {
             Json.createWriter(getWriter()).writeObject(object);
             getWriter().close();
         } catch (Exception ex) {
-            if (logger.isDebugEnabled()) {
-                ex.printStackTrace();
-            }
+            ex.printStackTrace();
             try {
                 sendError(SC_INTERNAL_SERVER_ERROR);
             } catch (IOException e) {
@@ -98,9 +90,7 @@ public class JsonResponse extends HttpServletResponseWrapper {
             Json.createWriter(getWriter()).writeArray(array);
             getWriter().close();
         } catch (Exception ex) {
-            if (logger.isDebugEnabled()) {
-                ex.printStackTrace();
-            }
+            ex.printStackTrace();
             try {
                 sendError(SC_INTERNAL_SERVER_ERROR);
             } catch (IOException e) {

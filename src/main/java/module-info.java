@@ -4,7 +4,6 @@ module dcapture.io {
     requires java.ws.rs;
     requires javax.inject;
     requires javax.servlet.api;
-    requires org.apache.logging.log4j;
     requires org.apache.commons.io;
     requires org.glassfish.java.json;
     requires jetty.io;
