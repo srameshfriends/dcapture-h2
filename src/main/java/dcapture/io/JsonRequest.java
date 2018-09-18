@@ -10,10 +10,8 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
-import java.util.logging.Logger;
 
 public class JsonRequest extends HttpServletRequestWrapper {
-    private static Logger logger = Logger.getLogger("dcapture.io");
     private JsonArray bodyArray;
     private JsonObject bodyObject;
     private JsonValue bodyValue;
@@ -101,5 +99,9 @@ public class JsonRequest extends HttpServletRequestWrapper {
             return ((JsonNumber) value).intValue();
         }
         return 0;
+    }
+
+    public Object getSessionAttribute(String name) {
+        return getSession(false).getAttribute(name);
     }
 }

@@ -42,3 +42,6 @@ IM03
 - >Log4j2 is removed default java logging is used
 - >Paging removed, FormModel is added
 
+IM04
+
+- >JsonRequest getSessionAttribute method created.
