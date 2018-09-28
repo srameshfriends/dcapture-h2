@@ -4,13 +4,18 @@ import io.github.pustike.inject.Injector;
 import io.github.pustike.inject.Injectors;
 import io.github.pustike.inject.bind.Binder;
 import io.github.pustike.inject.bind.Module;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.FileCleanerCleanup;
+import org.apache.commons.io.FileCleaningTracker;
 
 import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 import javax.ws.rs.*;
+import java.io.File;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,6 +45,7 @@ public class DispatcherListener implements ServletContextListener {
             addPathService(dispatcherMap, pathClass);
         }
         context.setAttribute("DispatcherMap", dispatcherMap);
+        context.setAttribute(DiskFileItemFactory.class.getSimpleName(), getDiskFileItemFactory(sce.getServletContext()));
     }
 
     @Override
@@ -49,6 +55,14 @@ public class DispatcherListener implements ServletContextListener {
         registry.destroyed(injector);
         logger.severe("database stopped");
         Injectors.dispose(injector);
+    }
+
+    private DiskFileItemFactory getDiskFileItemFactory(ServletContext context) {
+        File repository = (File) context.getAttribute("javax.servlet.context.tempdir");
+        FileCleaningTracker cleaningTracker = FileCleanerCleanup.getFileCleaningTracker(context);
+        DiskFileItemFactory factory = new DiskFileItemFactory(DiskFileItemFactory.DEFAULT_SIZE_THRESHOLD, repository);
+        factory.setFileCleaningTracker(cleaningTracker);
+        return factory;
     }
 
     private void bindInjector(final Binder binder) {
@@ -131,7 +145,7 @@ public class DispatcherListener implements ServletContextListener {
             throw new IllegalArgumentException(cls + " >> " + method + " >> is not valid return type");
         }
         if (1 == paramTypes.length) {
-            if (void.class.equals(returnType) && !HttpServletResponse.class.equals(paramTypes[0])) {
+            if (void.class.equals(returnType) && !isValidResponseParam(paramTypes[0])) {
                 throw new IllegalArgumentException(cls + " >> " + method + " >> not a valid method response not processed");
             }
         }
@@ -150,7 +164,21 @@ public class DispatcherListener implements ServletContextListener {
         }
     }
 
-    private boolean isValidResponseParam(Class<?> paramClass) {
-        return JsonResponse.class.equals(paramClass) || HtmlResponse.class.equals(paramClass);
+    private boolean isValidResponseParam(Class<?> source) {
+        if (JsonResponse.class.equals(source) || HtmlResponse.class.equals(source)) {
+            return true;
+        }
+        Class superclass = source.getSuperclass();
+        if (HttpServletResponse.class.equals(superclass) || HttpServletResponseWrapper.class.equals(superclass)) {
+            return true;
+        }
+        while (superclass != null) {
+            source = superclass;
+            superclass = source.getSuperclass();
+            if (HttpServletResponse.class.equals(superclass) || HttpServletResponseWrapper.class.equals(superclass)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

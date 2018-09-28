@@ -5,6 +5,8 @@ module dcapture.io {
     requires javax.inject;
     requires javax.servlet.api;
     requires org.apache.commons.io;
+    requires commons.fileupload;
+    requires commons.csv;
     requires org.glassfish.java.json;
     requires jetty.io;
     requires jetty.util;

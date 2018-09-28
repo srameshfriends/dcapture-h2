@@ -1,6 +1,7 @@
 package dcapture.io;
 
 import io.github.pustike.inject.Injector;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 
 import javax.json.*;
 import javax.servlet.*;
@@ -8,6 +9,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.logging.Logger;
@@ -89,7 +91,8 @@ public class DispatcherServlet extends GenericServlet {
         }
     }
 
-    private Object getMethodParameterInstance(String url, Class<?> pCls, HttpServletRequest req, HttpServletResponse res) {
+    private Object getMethodParameterInstance(String url, Class<?> pCls, HttpServletRequest req, HttpServletResponse res)
+            throws Exception {
         if (JsonRequest.class.equals(pCls)) {
             return new JsonRequest(req);
         } else if (JsonObject.class.equals(pCls)) {
@@ -102,6 +105,21 @@ public class DispatcherServlet extends GenericServlet {
             return new HtmlRequest(req);
         } else if (HtmlResponse.class.equals(pCls)) {
             return new HtmlResponse(res);
+        } else if (MultiPartRequest.class.equals(pCls)) {
+            DiskFileItemFactory factory = (DiskFileItemFactory) req.getServletContext()
+                    .getAttribute(DiskFileItemFactory.class.getSimpleName());
+            return new MultiPartRequest(factory, req);
+        }
+        Constructor[] constructors = pCls.getDeclaredConstructors();
+        for (Constructor ctr : constructors) {
+            Class<?>[] types = ctr.getParameterTypes();
+            if (1 == types.length) {
+                if (HttpServletRequest.class.equals(types[0])) {
+                    return ctr.newInstance(req);
+                } else if (HttpServletResponse.class.equals(types[0])) {
+                    return ctr.newInstance(res);
+                }
+            }
         }
         throw new IllegalArgumentException("Path service method requested parameter not yet implemented!");
     }

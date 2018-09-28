@@ -8,8 +8,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 public class FileMonitor implements Runnable, FileMonitorListener {
+    private static final Logger logger = Logger.getLogger("dcapture.io");
     private final File source;
     private final String sourcePrefix, targetPrefix;
     private FileMonitorListener listener;
@@ -155,7 +157,7 @@ public class FileMonitor implements Runnable, FileMonitorListener {
 
     @Override
     public void onFileMonitor(String type, File file) {
-        System.out.println("File has " + type + " \t " + file);
+        logger.severe("File has " + type + " \t " + file);
         try {
             String target = file.getAbsolutePath().replace(sourcePrefix, targetPrefix);
             if ("Modified".equals(type)) {
