@@ -13,6 +13,9 @@
       <module name="dcapture-io" target="10" />
     </bytecodeTargetLevel>
   </component>
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$" charset="UTF-8" />
+  </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
   <component name="InspectionProjectProfileManager">
     <profile version="1.0">
@@ -304,26 +307,26 @@
         <root url="jar://$MAVEN_REPOSITORY$/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: javax.ws.rs:javax.ws.rs-api:2.1">
+    <library name="Maven: javax.ws.rs:javax.ws.rs-api:2.1.1">
       <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/javax/ws/rs/javax.ws.rs-api/2.1/javax.ws.rs-api-2.1.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/ws/rs/javax.ws.rs-api/2.1.1/javax.ws.rs-api-2.1.1.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/javax/ws/rs/javax.ws.rs-api/2.1/javax.ws.rs-api-2.1-javadoc.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/ws/rs/javax.ws.rs-api/2.1.1/javax.ws.rs-api-2.1.1-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/javax/ws/rs/javax.ws.rs-api/2.1/javax.ws.rs-api-2.1-sources.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/javax/ws/rs/javax.ws.rs-api/2.1.1/javax.ws.rs-api-2.1.1-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Maven: org.apache.commons:commons-csv:1.5">
+    <library name="Maven: org.apache.commons:commons-csv:1.6">
       <CLASSES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/apache/commons/commons-csv/1.5/commons-csv-1.5.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/org/apache/commons/commons-csv/1.6/commons-csv-1.6.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$MAVEN_REPOSITORY$/org/apache/commons/commons-csv/1.5/commons-csv-1.5-javadoc.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/org/apache/commons/commons-csv/1.6/commons-csv-1.6-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$MAVEN_REPOSITORY$/org/apache/commons/commons-csv/1.5/commons-csv-1.5-sources.jar!/" />
+        <root url="jar://$MAVEN_REPOSITORY$/org/apache/commons/commons-csv/1.6/commons-csv-1.6-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Maven: org.eclipse.jetty:jetty-http:9.4.12.v20180830">

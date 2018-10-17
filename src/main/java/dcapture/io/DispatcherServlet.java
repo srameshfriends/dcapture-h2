@@ -109,6 +109,10 @@ public class DispatcherServlet extends GenericServlet {
             DiskFileItemFactory factory = (DiskFileItemFactory) req.getServletContext()
                     .getAttribute(DiskFileItemFactory.class.getSimpleName());
             return new MultiPartRequest(factory, req);
+        } else if (HttpServletRequest.class.equals(pCls)) {
+            return req;
+        } else if (HttpServletResponse.class.equals(pCls)) {
+            return res;
         }
         Constructor[] constructors = pCls.getDeclaredConstructors();
         for (Constructor ctr : constructors) {

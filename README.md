@@ -50,3 +50,10 @@ IM05
 
 - >Apache commons file upload and csv library are included
 - >Multi part servlet request support updated
+
+##### Oct-2018
+
+IM06
+
+- >Commons-csv(1.6) and javax.ws.rs(2.1.1) library upgraded
+- >DispatcherServlet request parameter HttpServletRequest and HttpServletResponse updated.
