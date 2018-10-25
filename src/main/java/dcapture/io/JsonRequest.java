@@ -10,8 +10,10 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.util.logging.Logger;
 
 public class JsonRequest extends HttpServletRequestWrapper {
+    private static Logger logger = Logger.getLogger("dcapture.io");
     private JsonArray bodyArray;
     private JsonObject bodyObject;
     private JsonValue bodyValue;
@@ -29,7 +31,7 @@ public class JsonRequest extends HttpServletRequestWrapper {
                 bodyValue = value;
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            logger.severe(request.getPathInfo() + " >> json parser error : " + ex.getMessage());
         }
     }
 
@@ -50,7 +52,7 @@ public class JsonRequest extends HttpServletRequestWrapper {
         try {
             IOUtils.copy(getInputStream(), writer, Charset.forName("UTF-8"));
         } catch (IOException ex) {
-            ex.printStackTrace();
+            logger.severe(getPathInfo() + " >> json parser error : " + ex.getMessage());
         }
         return writer.toString();
     }

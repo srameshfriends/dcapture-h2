@@ -47,12 +47,16 @@ public class DispatcherServlet extends GenericServlet {
             return;
         }
         Dispatcher dispatcher = dispatcherMap.get(pathInfo);
-        /*final String httpMethod = getHttpMethod(request);
+        final String httpMethod = request.getMethod() == null ? "GET" : request.getMethod().toUpperCase().trim();
         if (!httpMethod.equals(dispatcher.getHttpMethod())) {
-            error(cType, "Expected service method is " + dispatcher.getHttpMethod() +
-                    ", Requested method is : " + httpMethod, response);
+            error(cType, "Http " + dispatcher.getHttpMethod() + " : " + pathInfo + ". "
+                            + httpMethod + " is not valid", response);
             return;
-        }*/
+        }
+        if(dispatcher.isSecured() && request.getSession(false) == null) {
+            error(cType, "Unauthenticated Access : " + pathInfo, response);
+            return;
+        }
         try {
             Method method = dispatcher.getMethod();
             Class<?> beanClass = method.getDeclaringClass();
@@ -141,7 +145,7 @@ public class DispatcherServlet extends GenericServlet {
             JsonReader reader = Json.createReader(request.getInputStream());
             return reader.readObject();
         } catch (Exception ex) {
-            ex.printStackTrace();
+            logger.severe(pathInfo + " \t Http Request JsonObject format error  : " + ex.getMessage());
         }
         return Json.createObjectBuilder().build();
     }

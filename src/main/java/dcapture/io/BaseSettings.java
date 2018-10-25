@@ -8,8 +8,7 @@ import java.util.logging.Logger;
 public class BaseSettings {
     private static Logger logger = Logger.getLogger("dcapture.io");
     private String version, id, name;
-    private String databaseName, databaseUrl, databaseUser, databasePassword;
-    private JsonArray databaseConfig;
+    private String database;
     private int port;
 
     private BaseSettings() {
@@ -31,26 +30,6 @@ public class BaseSettings {
         return port;
     }
 
-    public String getDatabaseName() {
-        return databaseName;
-    }
-
-    public String getDatabaseUrl() {
-        return databaseUrl;
-    }
-
-    public String getDatabaseUser() {
-        return databaseUser;
-    }
-
-    public String getDatabasePassword() {
-        return databasePassword;
-    }
-
-    public JsonArray getDatabaseConfig() {
-        return databaseConfig;
-    }
-
     public static BaseSettings load(Class<?> classPath) throws Exception {
         BaseSettings settings = new BaseSettings();
         settings.version = "1.0";
@@ -70,11 +49,7 @@ public class BaseSettings {
                 } else if ("name".equals(key)) {
                     settings.name = text;
                 } else if ("database".equals(key)) {
-                    String[] dbs = getDatabaseSettings(text);
-                    settings.databaseName = dbs[0];
-                    settings.databaseUrl = dbs[1];
-                    settings.databaseUser = dbs[2];
-                    settings.databasePassword = dbs[3];
+                    settings.database = text.trim();
                 } else if ("version".equals(key)) {
                     settings.version = text;
                 } else if ("port".equals(key)) {
@@ -87,34 +62,11 @@ public class BaseSettings {
                 }
             }
         }
-        if (settings.databaseName != null) {
-            String dbCfgPath = "/" + settings.databaseName + ".json";
-            logger.severe("Database configuration reading from " + classPath.getResource(dbCfgPath));
-            JsonReader dbCfgReader = Json.createReader(classPath.getResourceAsStream(dbCfgPath));
-            settings.databaseConfig = dbCfgReader.readArray();
-        }
         return settings;
     }
 
-    private static String[] getDatabaseSettings(String compact) {
-        String[] values = compact.trim().split(" ");
-        if (4 > values.length) {
-            throw new IllegalArgumentException("Database user and password should be encrypted, and format is : " +
-                    "name [space] url [space] userName [space] password");
-        }
-        if (notValid(values[0])) {
-            throw new IllegalArgumentException("Database name not valid");
-        }
-        if (notValid(values[1])) {
-            throw new IllegalArgumentException("Database url not valid");
-        }
-        if (notValid(values[2])) {
-            throw new IllegalArgumentException("Database user not valid");
-        }
-        if (notValid(values[3])) {
-            throw new IllegalArgumentException("Database password not valid");
-        }
-        return new String[]{values[0].trim(), values[1].trim(), values[2].trim(), values[3].trim()};
+    public String getDatabase() {
+        return database;
     }
 
     public static String decode(String value) {

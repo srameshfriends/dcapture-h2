@@ -14,13 +14,9 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
-import javax.ws.rs.*;
 import java.io.File;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Logger;
@@ -28,6 +24,12 @@ import java.util.logging.Logger;
 public class DispatcherListener implements ServletContextListener {
     private static Logger logger = Logger.getLogger("dcapture.io");
     private DispatcherRegistry registry;
+    private final Set<String> httpMethodSet;
+
+    public DispatcherListener() {
+        httpMethodSet = new HashSet<>();
+        Collections.addAll(httpMethodSet, "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS");
+    }
 
     public void setRegistry(DispatcherRegistry registry) {
         this.registry = registry;
@@ -74,48 +76,41 @@ public class DispatcherListener implements ServletContextListener {
     }
 
     private void addPathService(Map<String, Dispatcher> serviceMap, Class<?> typeClass) {
-        Path classPath = typeClass.getAnnotation(Path.class);
+        HttpPath classPath = typeClass.getAnnotation(HttpPath.class);
         if (classPath == null) {
             return;
         }
         validatePathAnnotation(typeClass, classPath);
         List<Method> pathMethodList = getPathAnnotatedMethods(typeClass);
+
         if (pathMethodList.isEmpty()) {
             throw new IllegalArgumentException(typeClass + " >> At least one method annotated with @Path");
         }
         final String pathPrefix = classPath.value();
-        String pathSuffix;
+        String methodName;
         for (Method method : pathMethodList) {
             validateMethodDeclarations(typeClass, method);
-            Path methodPath = method.getAnnotation(Path.class);
-            pathSuffix = methodPath.value();
-            String path = pathPrefix + pathSuffix;
-            String httpMethod = findHttpMethod(method);
-            serviceMap.put(path.toLowerCase(), new Dispatcher(path, httpMethod, method));
-            logger.severe("Path Service : " + path.toLowerCase());
+            HttpPath httpPath = method.getAnnotation(HttpPath.class);
+            HttpMethod httpMethod = method.getAnnotation(HttpMethod.class);
+            methodName = "GET";
+            if(httpMethod != null) {
+                if(!httpMethodSet.contains(httpMethod.value().toUpperCase())) {
+                    throw new IllegalArgumentException(
+                            typeClass + " >> " + method.getName() + " annotated http method is not valid : " + httpMethod.value());
+                }
+                methodName = httpMethod.value().toUpperCase();
+            }
+            boolean secured = httpPath.secured();
+            if(!secured) {
+                secured = httpPath.secured();
+            }
+            String path = pathPrefix + httpPath.value();
+            serviceMap.put(path.toLowerCase(), new Dispatcher(path, methodName, method, secured));
+            logger.severe("Http " + methodName + " : " + path.toLowerCase());
         }
     }
 
-    private String findHttpMethod(Method method) {
-        if (method.isAnnotationPresent(GET.class)) {
-            return HttpMethod.GET;
-        } else if (method.isAnnotationPresent(POST.class)) {
-            return HttpMethod.POST;
-        } else if (method.isAnnotationPresent(PUT.class)) {
-            return HttpMethod.PUT;
-        } else if (method.isAnnotationPresent(DELETE.class)) {
-            return HttpMethod.DELETE;
-        } else if (method.isAnnotationPresent(PATCH.class)) {
-            return HttpMethod.PATCH;
-        } else if (method.isAnnotationPresent(HEAD.class)) {
-            return HttpMethod.HEAD;
-        } else if (method.isAnnotationPresent(OPTIONS.class)) {
-            return HttpMethod.OPTIONS;
-        }
-        return HttpMethod.GET;
-    }
-
-    private void validatePathAnnotation(Class<?> typeClass, Path pathAnn) {
+    private void validatePathAnnotation(Class<?> typeClass, HttpPath pathAnn) {
         if (!pathAnn.value().startsWith("/")) {
             throw new IllegalArgumentException(typeClass + " >> Path should be started with '/' char");
         }
@@ -128,7 +123,7 @@ public class DispatcherListener implements ServletContextListener {
         Method[] methodArray = pathClass.getDeclaredMethods();
         List<Method> methodList = new ArrayList<>();
         for (Method method : methodArray) {
-            if (method.isAnnotationPresent(Path.class)) {
+            if (method.isAnnotationPresent(HttpPath.class)) {
                 methodList.add(method);
             }
         }

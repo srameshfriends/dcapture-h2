@@ -17,7 +17,6 @@
         <commons-csv>1.6</commons-csv>
         <pustike-inject>1.4.2</pustike-inject>
         <jetty>9.4.12.v20180830</jetty>
-        <rs-api>2.1.1</rs-api>
         <javax-json>1.1.2</javax-json>
         <servlet-api>4.0.1</servlet-api>
     </properties>
@@ -67,12 +66,6 @@
         </dependency>
 
         <dependency>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>javax.ws.rs-api</artifactId>
-            <version>${rs-api}</version>
-        </dependency>
-
-        <dependency>
             <groupId>javax.json</groupId>
             <artifactId>javax.json-api</artifactId>
             <version>${javax-json}</version>
@@ -93,11 +86,15 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.7.0</version>
+                    <version>3.8.0</version>
                     <configuration>
                         <source>10</source>
                         <target>10</target>
                         <release>10</release>
+                        <verbose>true</verbose>
+                        <fork>true</fork>
+                        <executable>/usr/lib/jvm/jdk-11.0.1/bin/javac</executable>
+                        <compilerVersion>10</compilerVersion>
                     </configuration>
                     <dependencies>
                         <dependency>

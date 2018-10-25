@@ -1,7 +1,6 @@
 module dcapture.io {
     requires java.sql;
     requires java.json;
-    requires java.ws.rs;
     requires javax.inject;
     requires javax.servlet.api;
     requires org.apache.commons.io;

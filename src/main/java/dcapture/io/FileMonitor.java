@@ -176,6 +176,8 @@ public class FileMonitor implements Runnable, FileMonitorListener {
         if (2 > args.length) {
             throw new IllegalArgumentException("Source and target directory path not configured!");
         }
+        logger.severe("File Monitor Source : " + args[0]);
+        logger.severe("File Monitor Target : " + args[1]);
         FileMonitor fileMonitor = new FileMonitor(new File(args[0]), new File(args[1]));
         fileMonitor.run();
     }

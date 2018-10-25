@@ -57,3 +57,7 @@ IM06
 
 - >Commons-csv(1.6) and javax.ws.rs(2.1.1) library upgraded
 - >DispatcherServlet request parameter HttpServletRequest and HttpServletResponse updated.
+
+IM07
+
+- >Http method implementation completed
