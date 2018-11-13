@@ -58,6 +58,11 @@ IM06
 - >Commons-csv(1.6) and javax.ws.rs(2.1.1) library upgraded
 - >DispatcherServlet request parameter HttpServletRequest and HttpServletResponse updated.
 
+##### Nov-2018
+
 IM07
 
 - >Http method implementation completed
+- >Application Setting improved 
+- >Servlet Request updated FormModel features, FormModel removed
+- >IOStream helps to avoid development issue

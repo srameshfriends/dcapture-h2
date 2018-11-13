@@ -1,10 +1,6 @@
 package dcapture.io;
 
-import javax.json.*;
-import java.io.File;
-import java.io.FileInputStream;
-import java.net.URL;
-import java.nio.file.Paths;
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.logging.Logger;
@@ -47,8 +43,9 @@ public class Localization {
         return value != null ? MessageFormat.format(value, args) : name;
     }
 
-    public static Localization development(Class<?> classPath) throws Exception {
-        URL url = classPath.getResource("/locale");
+    /*public static Localization development(AppSettings settings) throws Exception {
+        return load(settings);
+        //URL url = appsSettings.getLanguages();
         if (url == null) {
             throw new NullPointerException("locale folder not found at module class path : " + classPath.getName());
         }
@@ -76,7 +73,7 @@ public class Localization {
         return localization;
     }
 
-    private static synchronized Properties development(File folder, JsonArray array) throws Exception {
+    /*private static synchronized Properties development(File folder, JsonArray array) throws Exception {
         Properties properties = new Properties();
         for (JsonValue json : array) {
             if (json instanceof JsonString) {
@@ -87,49 +84,28 @@ public class Localization {
             }
         }
         return properties;
-    }
+    }*/
 
-    public static Localization load(Class<?> classPath) throws Exception {
-        logger.severe("Localization configuration reading from " + classPath.getResource("/locale.json"));
+    public static synchronized Localization load(AppSettings settings, IOStream ioStream) throws Exception {
         Map<String, Properties> map = new HashMap<>();
-        String lang = "en";
-        JsonReader reader = Json.createReader(classPath.getResourceAsStream("/locale.json"));
-        JsonObject json = reader.readObject();
-        for (Map.Entry<String, JsonValue> entry : json.entrySet()) {
-            String key = entry.getKey().toLowerCase();
-            JsonValue jsonValue = entry.getValue();
-            if (jsonValue instanceof JsonString && "language".equals(key)) {
-                lang = ((JsonString) jsonValue).getString().trim();
-                if (notValid(lang)) {
-                    lang = "en";
-                }
-            } else if (jsonValue instanceof JsonArray) {
-                map.put(key, loadProperties(classPath, (JsonArray) jsonValue));
-            }
+        for (Map.Entry<String, String[]> entry : settings.getLanguages().entrySet()) {
+            map.put(entry.getKey(), loadProperties(ioStream, entry.getKey(), entry.getValue()));
         }
+        String lang = settings.getLanguage();
         Localization localization = new Localization();
-        localization.language = lang;
+        localization.language = lang == null ? "en" : lang;
         localization.cache = Collections.unmodifiableMap(map);
-        for (Map.Entry<String, Properties> entry : map.entrySet()) {
-            logger.severe("Localization language for  [" + entry.getKey()
-                    + "] properties count : " + entry.getValue().size());
-        }
         return localization;
     }
 
-    private static synchronized Properties loadProperties(Class<?> classPath, JsonArray array) throws Exception {
+    private static synchronized Properties loadProperties(IOStream ioStream, String lang, String[] pathArray)
+            throws IOException {
         Properties properties = new Properties();
-        for (JsonValue json : array) {
-            if (json instanceof JsonString) {
-                String name = ((JsonString) json).getString();
-                logger.severe(classPath.getName() + " >> " + classPath.getResource("/locale/" + name));
-                properties.load(classPath.getResourceAsStream("/locale/" + name));
-            }
+        for (String path : pathArray) {
+            logger.severe("Loading language properties : " + path);
+            properties.load(ioStream.getInputStream(path));
         }
+        logger.severe(lang + " > properties : " + properties.size());
         return properties;
-    }
-
-    private static boolean notValid(String value) {
-        return value == null || value.trim().isEmpty();
     }
 }

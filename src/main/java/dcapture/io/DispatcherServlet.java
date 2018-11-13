@@ -47,7 +47,7 @@ public class DispatcherServlet extends GenericServlet {
             return;
         }
         Dispatcher dispatcher = dispatcherMap.get(pathInfo);
-        final String httpMethod = request.getMethod() == null ? "GET" : request.getMethod().toUpperCase().trim();
+        final String httpMethod = request.getMethod() == null ? "POST" : request.getMethod().toUpperCase().trim();
         if (!httpMethod.equals(dispatcher.getHttpMethod())) {
             error(cType, "Http " + dispatcher.getHttpMethod() + " : " + pathInfo + ". "
                             + httpMethod + " is not valid", response);

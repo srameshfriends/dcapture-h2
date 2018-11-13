@@ -48,15 +48,16 @@ public class DispatcherListener implements ServletContextListener {
         }
         context.setAttribute("DispatcherMap", dispatcherMap);
         context.setAttribute(DiskFileItemFactory.class.getSimpleName(), getDiskFileItemFactory(sce.getServletContext()));
+        StringBuilder builder = new StringBuilder(" --- PATH SERVICE --- ");
+        dispatcherMap.forEach((s, dis) -> builder.append("\n Http ").append(dis.getHttpMethod())
+                .append(" : ").append(s.toLowerCase()));
+        logger.severe(builder.toString());
+        registry.contextInitialized(sce.getServletContext());
     }
 
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
-        ServletContext context = sce.getServletContext();
-        Injector injector = (Injector) context.getAttribute(Injector.class.getName());
-        registry.destroyed(injector);
-        logger.severe("database stopped");
-        Injectors.dispose(injector);
+        registry.contextDestroyed(sce.getServletContext());
     }
 
     private DiskFileItemFactory getDiskFileItemFactory(ServletContext context) {
@@ -69,7 +70,7 @@ public class DispatcherListener implements ServletContextListener {
 
     private void bindInjector(final Binder binder) {
         binder.setDefaultScope(Singleton.class);
-        registry.inject(binder);
+        registry.bind(binder);
         for (Class<?> pathClass : registry.getPathServiceList()) {
             binder.bind(pathClass);
         }
@@ -87,26 +88,24 @@ public class DispatcherListener implements ServletContextListener {
             throw new IllegalArgumentException(typeClass + " >> At least one method annotated with @Path");
         }
         final String pathPrefix = classPath.value();
-        String methodName;
         for (Method method : pathMethodList) {
             validateMethodDeclarations(typeClass, method);
             HttpPath httpPath = method.getAnnotation(HttpPath.class);
             HttpMethod httpMethod = method.getAnnotation(HttpMethod.class);
-            methodName = "GET";
-            if(httpMethod != null) {
-                if(!httpMethodSet.contains(httpMethod.value().toUpperCase())) {
+            String methodName = "POST";
+            if (httpMethod != null) {
+                if (!httpMethodSet.contains(httpMethod.value().toUpperCase())) {
                     throw new IllegalArgumentException(
                             typeClass + " >> " + method.getName() + " annotated http method is not valid : " + httpMethod.value());
                 }
                 methodName = httpMethod.value().toUpperCase();
             }
             boolean secured = httpPath.secured();
-            if(!secured) {
+            if (!secured) {
                 secured = httpPath.secured();
             }
             String path = pathPrefix + httpPath.value();
             serviceMap.put(path.toLowerCase(), new Dispatcher(path, methodName, method, secured));
-            logger.severe("Http " + methodName + " : " + path.toLowerCase());
         }
     }
 
@@ -160,7 +159,8 @@ public class DispatcherListener implements ServletContextListener {
     }
 
     private boolean isValidResponseParam(Class<?> source) {
-        if (JsonResponse.class.equals(source) || HtmlResponse.class.equals(source)) {
+        if (JsonResponse.class.equals(source) || HtmlResponse.class.equals(source) ||
+                HttpServletResponse.class.equals(source)) {
             return true;
         }
         Class superclass = source.getSuperclass();
