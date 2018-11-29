@@ -66,3 +66,8 @@ IM07
 - >Application Setting improved 
 - >Servlet Request updated FormModel features, FormModel removed
 - >IOStream helps to avoid development issue
+
+IM08
+
+- >Text message response created
+- >Dispatcher servlet more error message updated

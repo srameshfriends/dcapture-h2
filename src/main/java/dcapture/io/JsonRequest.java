@@ -10,7 +10,10 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class JsonRequest extends HttpServletRequestWrapper {
@@ -35,6 +38,17 @@ public class JsonRequest extends HttpServletRequestWrapper {
         } catch (Exception ex) {
             logger.severe(request.getPathInfo() + " >> json parser error : " + ex.getMessage());
         }
+    }
+
+    public String getHttpPath() {
+        int serverPort = getServerPort();
+        StringBuilder builder = new StringBuilder();
+        builder.append(getScheme()).append("://").append(getServerName());
+        if (serverPort != 80 && serverPort != 443) {
+            builder.append(":").append(serverPort);
+        }
+        builder.append(getContextPath()).append(getServletPath());
+        return builder.toString();
     }
 
     public JsonObject getJsonObject() {

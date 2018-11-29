@@ -25,10 +25,11 @@ public class Localization {
         return cache.get(lang == null ? language : lang);
     }
 
-    public String get(String lang, String name) {
-        Properties prop = cache.get(lang == null ? language : lang);
-        String value = prop == null ? null : prop.getProperty(name);
-        return value == null ? name : value;
+    public static synchronized Localization getInstance(Map<String, Properties> map, String defaultLanguage) {
+        Localization localization = new Localization();
+        localization.language = defaultLanguage == null ? "en" : defaultLanguage;
+        localization.cache = Collections.unmodifiableMap(map);
+        return localization;
     }
 
     public String get(String name) {
@@ -43,49 +44,6 @@ public class Localization {
         return value != null ? MessageFormat.format(value, args) : name;
     }
 
-    /*public static Localization development(AppSettings settings) throws Exception {
-        return load(settings);
-        //URL url = appsSettings.getLanguages();
-        if (url == null) {
-            throw new NullPointerException("locale folder not found at module class path : " + classPath.getName());
-        }
-        File localeFolder = Paths.get(url.toURI()).toFile();
-        logger.severe("Loading locale properties from : " + localeFolder);
-        Map<String, Properties> map = new HashMap<>();
-        String lang = "en";
-        JsonReader reader = Json.createReader(classPath.getResourceAsStream("/locale.json"));
-        JsonObject json = reader.readObject();
-        for (Map.Entry<String, JsonValue> entry : json.entrySet()) {
-            String key = entry.getKey().toLowerCase();
-            JsonValue jsonValue = entry.getValue();
-            if (jsonValue instanceof JsonString && "language".equals(key)) {
-                lang = ((JsonString) jsonValue).getString().trim();
-                if (notValid(lang)) {
-                    lang = "en";
-                }
-            } else if (jsonValue instanceof JsonArray) {
-                map.put(key, development(localeFolder, (JsonArray) jsonValue));
-            }
-        }
-        Localization localization = new Localization();
-        localization.language = lang;
-        localization.cache = Collections.unmodifiableMap(map);
-        return localization;
-    }
-
-    /*private static synchronized Properties development(File folder, JsonArray array) throws Exception {
-        Properties properties = new Properties();
-        for (JsonValue json : array) {
-            if (json instanceof JsonString) {
-                String name = ((JsonString) json).getString();
-                File file = new File(folder, "/" + name);
-                logger.severe("Locale File Loading : " + file);
-                properties.load(new FileInputStream(file));
-            }
-        }
-        return properties;
-    }*/
-
     public static synchronized Localization load(AppSettings settings, IOStream ioStream) throws Exception {
         Map<String, Properties> map = new HashMap<>();
         for (Map.Entry<String, String[]> entry : settings.getLanguages().entrySet()) {
@@ -96,6 +54,12 @@ public class Localization {
         localization.language = lang == null ? "en" : lang;
         localization.cache = Collections.unmodifiableMap(map);
         return localization;
+    }
+
+    public String get(String name, String lang) {
+        Properties prop = cache.get(lang == null ? language : lang);
+        String value = prop == null ? null : prop.getProperty(name);
+        return value == null ? name : value;
     }
 
     private static synchronized Properties loadProperties(IOStream ioStream, String lang, String[] pathArray)

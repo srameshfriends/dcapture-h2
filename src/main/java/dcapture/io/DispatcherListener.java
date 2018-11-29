@@ -159,8 +159,7 @@ public class DispatcherListener implements ServletContextListener {
     }
 
     private boolean isValidResponseParam(Class<?> source) {
-        if (JsonResponse.class.equals(source) || HtmlResponse.class.equals(source) ||
-                HttpServletResponse.class.equals(source)) {
+        if (HttpServletResponse.class.equals(source) || TextMessage.class.equals(source)) {
             return true;
         }
         Class superclass = source.getSuperclass();

@@ -62,18 +62,25 @@ public class AppSettings {
             JsonValue jsonValue = entry.getValue();
             if (jsonValue instanceof JsonString) {
                 String text = ((JsonString) jsonValue).getString().trim();
-                if ("id".equals(key)) {
-                    settings.id = text;
-                } else if ("name".equals(key)) {
-                    settings.name = text;
-                } else if ("database".equals(key)) {
-                    settings.database = text;
-                } else if ("port".equals(key)) {
-                    settings.port = parsePort(text);
-                } else if ("language".equals(key)) {
-                    settings.language = text.toLowerCase();
-                } else if ("version".equals(key)) {
-                    settings.version = text;
+                switch (key) {
+                    case "id":
+                        settings.id = text;
+                        break;
+                    case "name":
+                        settings.name = text;
+                        break;
+                    case "database":
+                        settings.database = text;
+                        break;
+                    case "port":
+                        settings.port = parsePort(text);
+                        break;
+                    case "language":
+                        settings.language = text.toLowerCase();
+                        break;
+                    case "version":
+                        settings.version = text;
+                        break;
                 }
             } else if (jsonValue instanceof JsonNumber) {
                 if ("port".equals(key)) {
