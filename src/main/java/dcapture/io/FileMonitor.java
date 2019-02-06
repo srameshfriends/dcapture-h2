@@ -1,5 +1,7 @@
 package dcapture.io;
 
+import org.apache.log4j.Logger;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -8,10 +10,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 
 public class FileMonitor implements Runnable, FileMonitorListener {
-    private static final Logger logger = Logger.getLogger("dcapture.io");
+    private static final Logger logger = Logger.getLogger(FileMonitor.class);
     private final File source;
     private final String sourcePrefix, targetPrefix;
     private FileMonitorListener listener;
@@ -155,9 +156,19 @@ public class FileMonitor implements Runnable, FileMonitorListener {
         }
     }
 
+    public static void main(String... args) {
+        if (2 > args.length) {
+            throw new IllegalArgumentException("Source and target directory path not configured!");
+        }
+        logger.info("File Monitor Source : " + args[0]);
+        logger.info("File Monitor Target : " + args[1]);
+        FileMonitor fileMonitor = new FileMonitor(new File(args[0]), new File(args[1]));
+        fileMonitor.run();
+    }
+
     @Override
     public void onFileMonitor(String type, File file) {
-        logger.severe("File has " + type + " \t " + file);
+        logger.info("File has " + type + " \t " + file);
         try {
             String target = file.getAbsolutePath().replace(sourcePrefix, targetPrefix);
             if ("Modified".equals(type)) {
@@ -170,15 +181,5 @@ public class FileMonitor implements Runnable, FileMonitorListener {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-    }
-
-    public static void main(String... args) {
-        if (2 > args.length) {
-            throw new IllegalArgumentException("Source and target directory path not configured!");
-        }
-        logger.severe("File Monitor Source : " + args[0]);
-        logger.severe("File Monitor Target : " + args[1]);
-        FileMonitor fileMonitor = new FileMonitor(new File(args[0]), new File(args[1]));
-        fileMonitor.run();
     }
 }

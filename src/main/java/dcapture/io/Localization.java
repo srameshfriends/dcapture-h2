@@ -1,12 +1,13 @@
 package dcapture.io;
 
+import org.apache.log4j.Logger;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.*;
-import java.util.logging.Logger;
 
 public class Localization {
-    private static Logger logger = Logger.getLogger("dcapture.io");
+    private static Logger logger = Logger.getLogger(Localization.class);
     private Map<String, Properties> cache;
     private String language;
 
@@ -38,10 +39,25 @@ public class Localization {
         return value == null ? name : value;
     }
 
+    private static synchronized Properties loadProperties(IOStream ioStream, String lang, String[] pathArray)
+            throws IOException {
+        Properties properties = new Properties();
+        for (String path : pathArray) {
+            logger.debug("Loading language properties : " + path);
+            properties.load(ioStream.getResourceAsStream(path));
+        }
+        logger.debug(lang + " > properties : " + properties.size());
+        return properties;
+    }
+
     public String getMessage(String name, Object... args) {
-        Properties prop = cache.get(language);
+        return args == null ? get(name) : MessageFormat.format(get(name), args);
+    }
+
+    public String get(String name, String lang) {
+        Properties prop = cache.get(lang == null ? language : lang);
         String value = prop == null ? null : prop.getProperty(name);
-        return value != null ? MessageFormat.format(value, args) : name;
+        return value == null ? name : value;
     }
 
     public static synchronized Localization load(AppSettings settings, IOStream ioStream) throws Exception {
@@ -56,20 +72,7 @@ public class Localization {
         return localization;
     }
 
-    public String get(String name, String lang) {
-        Properties prop = cache.get(lang == null ? language : lang);
-        String value = prop == null ? null : prop.getProperty(name);
-        return value == null ? name : value;
-    }
-
-    private static synchronized Properties loadProperties(IOStream ioStream, String lang, String[] pathArray)
-            throws IOException {
-        Properties properties = new Properties();
-        for (String path : pathArray) {
-            logger.severe("Loading language properties : " + path);
-            properties.load(ioStream.getInputStream(path));
-        }
-        logger.severe(lang + " > properties : " + properties.size());
-        return properties;
+    public Map<String, Properties> getPropertiesMap() {
+        return cache;
     }
 }

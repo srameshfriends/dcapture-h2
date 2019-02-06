@@ -1,29 +1,25 @@
 package dcapture.io;
 
+import dcapture.db.util.DataSetResult;
+import dcapture.db.util.ServletResult;
 import io.github.pustike.inject.Injector;
 import io.github.pustike.inject.Injectors;
 import io.github.pustike.inject.bind.Binder;
 import io.github.pustike.inject.bind.Module;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.commons.fileupload.servlet.FileCleanerCleanup;
-import org.apache.commons.io.FileCleaningTracker;
+import org.apache.log4j.Logger;
 
-import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
-import java.io.File;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.logging.Logger;
 
-public class DispatcherListener implements ServletContextListener {
-    private static Logger logger = Logger.getLogger("dcapture.io");
-    private DispatcherRegistry registry;
+public class DispatcherListener implements ServletContextListener, Module, Comparator<Dispatcher> {
+    private static Logger logger = Logger.getLogger(DispatcherListener.class);
     private final Set<String> httpMethodSet;
 
     public DispatcherListener() {
@@ -31,49 +27,54 @@ public class DispatcherListener implements ServletContextListener {
         Collections.addAll(httpMethodSet, "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS");
     }
 
-    public void setRegistry(DispatcherRegistry registry) {
-        this.registry = registry;
+    @Override
+    public final void configure(Binder binder) {
+        configureBinder(binder);
+        for (Class<?> pathClass : getHttpPathList()) {
+            binder.bind(pathClass);
+        }
     }
 
     @Override
-    public void contextInitialized(ServletContextEvent sce) {
+    public final void contextInitialized(ServletContextEvent sce) {
         final ServletContext context = sce.getServletContext();
-        ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
-        context.setAttribute(ThreadPoolExecutor.class.getName(), threadPoolExecutor);
-        Injector injector = Injectors.create((Module) this::bindInjector);
-        context.setAttribute(Injector.class.getName(), injector);
+        context.setAttribute(ThreadPoolExecutor.class.getName(), Executors.newCachedThreadPool());
+        context.setAttribute(Injector.class.getName(), Injectors.create(DispatcherListener.this));
         Map<String, Dispatcher> dispatcherMap = new HashMap<>();
-        for (Class<?> pathClass : registry.getPathServiceList()) {
+        for (Class<?> pathClass : getHttpPathList()) {
             addPathService(dispatcherMap, pathClass);
         }
         context.setAttribute("DispatcherMap", dispatcherMap);
-        context.setAttribute(DiskFileItemFactory.class.getSimpleName(), getDiskFileItemFactory(sce.getServletContext()));
         StringBuilder builder = new StringBuilder(" --- PATH SERVICE --- ");
-        dispatcherMap.forEach((s, dis) -> builder.append("\n Http ").append(dis.getHttpMethod())
-                .append(" : ").append(s.toLowerCase()));
-        logger.severe(builder.toString());
-        registry.contextInitialized(sce.getServletContext());
+        List<Dispatcher> values = new ArrayList<>(dispatcherMap.values());
+        values.sort(this);
+        values.forEach(dis -> builder.append("\n").append(dis.getHttpMethod()).append(" : ")
+                .append(dis.getPath().toLowerCase()));
+        logger.debug(builder.toString());
+        initialized(sce.getServletContext());
     }
 
     @Override
-    public void contextDestroyed(ServletContextEvent sce) {
-        registry.contextDestroyed(sce.getServletContext());
+    public final void contextDestroyed(ServletContextEvent sce) {
+        destroyed(sce.getServletContext());
     }
 
-    private DiskFileItemFactory getDiskFileItemFactory(ServletContext context) {
-        File repository = (File) context.getAttribute("javax.servlet.context.tempdir");
-        FileCleaningTracker cleaningTracker = FileCleanerCleanup.getFileCleaningTracker(context);
-        DiskFileItemFactory factory = new DiskFileItemFactory(DiskFileItemFactory.DEFAULT_SIZE_THRESHOLD, repository);
-        factory.setFileCleaningTracker(cleaningTracker);
-        return factory;
+    protected void configureBinder(Binder binder) {
     }
 
-    private void bindInjector(final Binder binder) {
-        binder.setDefaultScope(Singleton.class);
-        registry.bind(binder);
-        for (Class<?> pathClass : registry.getPathServiceList()) {
-            binder.bind(pathClass);
-        }
+    protected List<Class<?>> getHttpPathList() {
+        return new ArrayList<>();
+    }
+
+    protected void initialized(ServletContext context) {
+    }
+
+    protected void destroyed(ServletContext context) {
+    }
+
+    @Override
+    public final int compare(Dispatcher o1, Dispatcher o2) {
+        return o1.getPath().compareTo(o2.getPath());
     }
 
     private void addPathService(Map<String, Dispatcher> serviceMap, Class<?> typeClass) {
@@ -159,7 +160,8 @@ public class DispatcherListener implements ServletContextListener {
     }
 
     private boolean isValidResponseParam(Class<?> source) {
-        if (HttpServletResponse.class.equals(source) || TextMessage.class.equals(source)) {
+        if (ServletResult.class.equals(source) || DataSetResult.class.equals(source)
+                || HttpServletResponse.class.equals(source)) {
             return true;
         }
         Class superclass = source.getSuperclass();

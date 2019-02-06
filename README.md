@@ -71,3 +71,10 @@ IM08
 
 - >Text message response created
 - >Dispatcher servlet more error message updated
+
+##### Feb-2019
+ 
+IM09
+ 
+- >dcapture-maven-parent and dcapture-db projects dependency added
+- >Jdk revert back to Java 8 due to tomcat 9 deployment 

@@ -1,15 +1,16 @@
 package dcapture.io;
 
+import org.apache.log4j.Logger;
+
 import javax.json.*;
 import java.io.InputStream;
 import java.util.*;
-import java.util.logging.Logger;
 
 public class AppSettings {
     public static final String PATH = "/config/application-settings.json";
-    private static Logger logger = Logger.getLogger("dcapture.io");
-    private String version, id, name, language, database;
-    private String[] databases, columnSets;
+    private static Logger logger = Logger.getLogger(AppSettings.class);
+    private String version, id, name, language;
+    private Properties database;
     private Map<String, String[]> languagesMap;
     private Map<String, String> appDataMap;
     private int port;
@@ -45,14 +46,6 @@ public class AppSettings {
         return appDataMap.get(name.toLowerCase());
     }
 
-    public String[] getDatabases() {
-        return databases;
-    }
-
-    public String[] getColumnSets() {
-        return columnSets;
-    }
-
     public static AppSettings load(InputStream stream) {
         AppSettings settings = new AppSettings();
         JsonReader reader = Json.createReader(stream);
@@ -69,9 +62,6 @@ public class AppSettings {
                     case "name":
                         settings.name = text;
                         break;
-                    case "database":
-                        settings.database = text;
-                        break;
                     case "port":
                         settings.port = parsePort(text);
                         break;
@@ -86,17 +76,17 @@ public class AppSettings {
                 if ("port".equals(key)) {
                     settings.port = ((JsonNumber) jsonValue).intValue();
                 }
-            } else if (jsonValue instanceof JsonArray) {
-                if ("databases".equals(key)) {
-                    settings.databases = toStringArray("/config/", (JsonArray) jsonValue);
-                } else if ("columnsets".equals(key)) {
-                    settings.columnSets = toStringArray("/config/", (JsonArray) jsonValue);
-                }
             } else if (jsonValue instanceof JsonObject) {
-                if ("languages".equals(key)) {
-                    settings.languagesMap = Collections.unmodifiableMap(loadLanguages(jsonValue.asJsonObject()));
-                } else if ("appdata".equals(key)) {
-                    settings.appDataMap = Collections.unmodifiableMap(loadAppDataMap(jsonValue.asJsonObject()));
+                switch (key) {
+                    case "languages":
+                        settings.languagesMap = Collections.unmodifiableMap(loadLanguages(jsonValue.asJsonObject()));
+                        break;
+                    case "appdata":
+                        settings.appDataMap = Collections.unmodifiableMap(loadAppDataMap(jsonValue.asJsonObject()));
+                        break;
+                    case "database":
+                        settings.database = loadDatabaseProperties(jsonValue.asJsonObject());
+                        break;
                 }
             }
         }
@@ -109,8 +99,14 @@ public class AppSettings {
         return settings;
     }
 
-    public String getDatabase() {
-        return database;
+    private static int parsePort(String value) {
+        try {
+            int prt = Integer.parseInt(value);
+            return 1 > prt ? 9090 : prt;
+        } catch (NumberFormatException ex) {
+            logger.error("Base settings port not valid");
+        }
+        return 9090;
     }
 
     public static String decode(String value) {
@@ -121,14 +117,15 @@ public class AppSettings {
         return Base64.getEncoder().encodeToString(value.getBytes());
     }
 
-    private static int parsePort(String value) {
-        try {
-            int prt = Integer.parseInt(value);
-            return 1 > prt ? 9090 : prt;
-        } catch (NumberFormatException ex) {
-            logger.severe("Base settings port not valid");
+    private static String toString(JsonArray array) {
+        LinkedHashSet<String> hashSet = new LinkedHashSet<>();
+        for (JsonValue json : array) {
+            if (json instanceof JsonString) {
+                String suffix = ((JsonString) json).getString().trim();
+                hashSet.add(suffix);
+            }
         }
-        return 9090;
+        return String.join(",", hashSet);
     }
 
     private static Map<String, String[]> loadLanguages(JsonObject object) {
@@ -152,6 +149,20 @@ public class AppSettings {
         return map;
     }
 
+    private static Properties loadDatabaseProperties(JsonObject object) {
+        Properties prop = new Properties();
+        String user = getString(object.get("user"));
+        String password = getString(object.get("password"));
+        prop.put("url", getString(object.get("url")));
+        prop.put("user", AppSettings.decode(user));
+        prop.put("password", AppSettings.decode(password));
+        JsonValue metadata = object.get("metadata");
+        if (metadata instanceof JsonArray) {
+            prop.put("metadata", toString(metadata.asJsonArray()));
+        }
+        return prop;
+    }
+
     private static String[] toStringArray(String prefix, JsonArray array) {
         LinkedHashSet<String> hashSet = new LinkedHashSet<>();
         for (JsonValue json : array) {
@@ -160,6 +171,17 @@ public class AppSettings {
                 hashSet.add(prefix + suffix);
             }
         }
-        return hashSet.isEmpty() ? null : hashSet.toArray(new String[0]);
+        return hashSet.isEmpty() ? new String[]{} : hashSet.toArray(new String[0]);
+    }
+
+    private static String getString(JsonValue value) {
+        if (value instanceof JsonString) {
+            return (((JsonString) value).getString());
+        }
+        return "";
+    }
+
+    public Properties getDatabase() {
+        return database;
     }
 }
