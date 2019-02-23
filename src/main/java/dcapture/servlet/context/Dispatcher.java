@@ -1,4 +1,4 @@
-package dcapture.io;
+package dcapture.servlet.context;
 
 import java.lang.reflect.Method;
 import java.util.Objects;
@@ -15,19 +15,19 @@ public class Dispatcher {
         this.secured = secured;
     }
 
-    public String getPath() {
+    String getPath() {
         return path;
     }
 
-    public String getHttpMethod() {
+    String getHttpMethod() {
         return httpMethod;
     }
 
-    public Method getMethod() {
+    Method getMethod() {
         return method;
     }
 
-    public boolean isSecured() {
+    boolean isSecured() {
         return secured;
     }
 
@@ -46,6 +46,7 @@ public class Dispatcher {
 
     @Override
     public String toString() {
-        return path;
+        return secured + ": " + httpMethod + ": " + path +
+                " \t (" + method.getDeclaringClass().getName() + "." + method.getName() + ")";
     }
 }

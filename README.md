@@ -1,24 +1,25 @@
-# dcapture-io
+# dcapture-servlet
 
-Web Application Utility
-
-Java -version 10
+Application Dispatcher Servlet
 
 ### Dependency
 
-1. log4j-api, log4j-core - 2.11.0
-2. commons-io - 2.6
+1. java-8
+2. dcapture-api dependency
 3. pustike-inject - 1.4.2
-4. javax.servlet-api - 4.0.1
-5. jetty-server, jetty-servlet - 9.4.11.v20180605
-6. javax.ws.rs-api - 2.1
-7. javax.json-api - 1.1.2
+4. commons-email - 1.5
+5. jetty-server, jetty-servlet - 9.4.11.v20180605 (Development Only)
 
 ### Configuration
 
-- User settings should be at class path > settings.json
-- Localization properties files details at > locale.json
-- Localization files should be placed at class path > /locale/*.*
+- Settings is json format located at class path > config/settings.json
+- Localization api provided.
+- Localization loaded from webapp resource base > locale/*-en.properties, locale/*-ta.properties.
+- Application admin console is responsible for loading and update localization.
+- DispatcherListener, DispatcherServlet helps to run applications
+- Session, Backup, Email and sms notification service api accessible from applications   
+
+## Changes and Commits
 
 ##### July-2018
 
@@ -77,4 +78,9 @@ IM08
 IM09
  
 - >dcapture-maven-parent and dcapture-db projects dependency added
-- >Jdk revert back to Java 8 due to tomcat 9 deployment 
+- >Jdk revert back to Java 8 due to tomcat 9 deployment
+
+RID10 (Reference Id)
+
+- >dcapture-io renamed to dcapture-servlet
+- >dcapture-servlet handle all http servlet request and response for all HttpContext projects
