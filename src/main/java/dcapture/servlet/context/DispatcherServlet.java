@@ -1,6 +1,6 @@
 package dcapture.servlet.context;
 
-import dcapture.api.io.HttpContext;
+import dcapture.api.io.*;
 import dcapture.api.postgres.PgDatabase;
 import dcapture.api.sql.SqlContext;
 import dcapture.api.sql.SqlDatabase;
@@ -26,6 +26,7 @@ import java.util.*;
 @MultipartConfig(fileSizeThreshold = 1024 * 1024, maxFileSize = 1024 * 1024 * 5, maxRequestSize = 1024 * 1024 * 10)
 public class DispatcherServlet extends GenericServlet {
     private static final Logger logger = Logger.getLogger(DispatcherServlet.class);
+    private static final int SC_BAD_REQUEST = 400;
     private final Set<String> validContentTypes, validMethods;
     private DispatcherMap dispatcherMap;
     private Injector injector;
@@ -58,28 +59,26 @@ public class DispatcherServlet extends GenericServlet {
     }
 
     @Override
-    public void service(ServletRequest req, ServletResponse res) {
+    public void service(ServletRequest req, ServletResponse resp) {
         HttpServletRequest request = (HttpServletRequest) req;
+        HttpServletResponse response = (HttpServletResponse) resp;
         final String pathInfo = getValidPathInfo(request.getPathInfo());
         final String method = getValidMethod(request.getMethod());
         final String contentType = getValidContentType(request.getContentType());
-        ResponseHandler handler = new ResponseHandler((HttpServletResponse) res, pathInfo);
-        handler.setMessages(messages);
-        handler.setSqlContext(sqlContext);
         if (!dispatcherMap.isHttpService(pathInfo)) {
-            handler.error("application.path.error", pathInfo);
+            ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.path.error", pathInfo));
             return;
         }
         Dispatcher dispatcher = dispatcherMap.getDispatcher(pathInfo);
         if (!method.equals(dispatcher.getHttpMethod())) {
             Object[] args = new String[]{pathInfo, method, dispatcher.getHttpMethod()};
-            handler.error("application.httpMethod.error", args);
+            ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.httpMethod.error", args));
             return;
         }
         if (dispatcher.isSecured()) {
             HttpSession session = request.getSession(false);
             if (session == null || session.getId() == null) {
-                handler.error("application.unauthorized.error", pathInfo);
+                ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.unauthorized.error", pathInfo));
                 return;
             }
         }
@@ -94,12 +93,12 @@ public class DispatcherServlet extends GenericServlet {
             if (ex instanceof MessageException) {
                 MessageException msgEx = (MessageException) ex;
                 if (msgEx.getErrorCode() == null) {
-                    handler.error(msgEx.getMessage());
+                    ResponseHandler.send(response, SC_BAD_REQUEST, msgEx.getMessage());
                 } else {
-                    handler.error(messages.getMessage(msgEx.getErrorCode(), msgEx.getArguments()));
+                    ResponseHandler.send(response, SC_BAD_REQUEST, getMessage(msgEx.getErrorCode(), msgEx.getArguments()));
                 }
             } else {
-                handler.error("application.content.error", pathInfo, ex.getMessage());
+                ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.content.error", pathInfo, ex.getMessage()));
             }
         }
         if (contentReader == null) {
@@ -111,20 +110,49 @@ public class DispatcherServlet extends GenericServlet {
             serviceMethod.setAccessible(true);
             Object serviceBean = injector.getInstance(beanClass);
             Class<?>[] paramTypes = serviceMethod.getParameterTypes();
+            Object result = null;
             if (1 == paramTypes.length) {
-                Object parameter = contentReader.getMethodParameter(sqlContext, paramTypes[0], handler);
-                handler.send(dispatcher, serviceMethod.invoke(serviceBean, parameter));
+                Object parameter = contentReader.getMethodParameter(sqlContext, paramTypes[0], response);
+                result = serviceMethod.invoke(serviceBean, parameter);
             } else if (0 == paramTypes.length) {
-                handler.send(dispatcher, serviceMethod.invoke(serviceBean));
+                result = serviceMethod.invoke(serviceBean);
             } else if (2 == paramTypes.length) {
-                Object paramFirst = contentReader.getMethodParameter(sqlContext, paramTypes[0], handler);
-                Object paramSecond = contentReader.getMethodParameter(sqlContext, paramTypes[1], handler);
-                handler.send(dispatcher, serviceMethod.invoke(serviceBean, paramFirst, paramSecond));
+                Object paramFirst = contentReader.getMethodParameter(sqlContext, paramTypes[0], response);
+                Object paramSecond = contentReader.getMethodParameter(sqlContext, paramTypes[1], response);
+                result = serviceMethod.invoke(serviceBean, paramFirst, paramSecond);
+            } else if (!void.class.equals(dispatcher.getMethod().getReturnType())) {
+                ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.response.type.error", pathInfo));
+                return;
             } else {
-                handler.error("application.method.parameter.error");
+                logger.error("Unknown http service result type is received : " + dispatcher.toString());
+            }
+            if (result instanceof JsonResult) {
+                JsonHandler jsonHandler = new JsonHandler(response, pathInfo);
+                jsonHandler.setSqlContext(sqlContext);
+                jsonHandler.setMessages(messages);
+                jsonHandler.send((JsonResult) result);
+            } else if (result instanceof CsvResult) {
+                CsvHandler csvHandler = new CsvHandler(response, pathInfo);
+                csvHandler.setSqlContext(sqlContext);
+                csvHandler.setMessages(messages);
+                csvHandler.sendAsCsv((CsvResult) result);
+            } else if (result instanceof ServletResult) {
+                ServletResult svtResult = (ServletResult) result;
+                if (svtResult.getMessageCode() != null) {
+                    ResponseHandler.send(response, svtResult.getStatus(), getMessage(svtResult.getMessageCode(), svtResult.getArguments()));
+                } else {
+                    ResponseHandler.send(response, svtResult.getStatus(), svtResult.getMessage());
+                }
+            } else {
+                ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.method.parameter.error", pathInfo));
             }
         } catch (Exception ex) {
-            handler.errorMessage(getRootCause(ex));
+            String msg = getRootCause(ex);
+            ResponseHandler.send(response, SC_BAD_REQUEST, msg);
+            logger.error(msg);
+            if (logger.isDebugEnabled()) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -214,6 +242,10 @@ public class DispatcherServlet extends GenericServlet {
         return "text/plain";
     }
 
+    private String getMessage(String code, Object... args) {
+        return messages.getMessage(code, args);
+    }
+
     /**
      * Default method is @GET
      * Http servlet request method supported only @GET, @POST and @DELETE
@@ -244,8 +276,11 @@ public class DispatcherServlet extends GenericServlet {
         if (throwable.getCause() != null) {
             return getRootCause(throwable.getCause());
         } else {
-            if (logger.isDebugEnabled()) {
-                throwable.printStackTrace();
+            if (throwable instanceof MessageException) {
+                String messageCode = ((MessageException) throwable).getErrorCode();
+                if (messageCode != null) {
+                    return getMessage(messageCode, ((MessageException) throwable).getArguments());
+                }
             }
             return throwable.getMessage();
         }
