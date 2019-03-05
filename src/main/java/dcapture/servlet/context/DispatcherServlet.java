@@ -127,15 +127,9 @@ public class DispatcherServlet extends GenericServlet {
                 logger.error("Unknown http service result type is received : " + dispatcher.toString());
             }
             if (result instanceof JsonResult) {
-                JsonHandler jsonHandler = new JsonHandler(response, pathInfo);
-                jsonHandler.setSqlContext(sqlContext);
-                jsonHandler.setMessages(messages);
-                jsonHandler.send((JsonResult) result);
+                new JsonHandler(response, pathInfo, messages).setSqlContext(sqlContext).send((JsonResult) result);
             } else if (result instanceof CsvResult) {
-                CsvHandler csvHandler = new CsvHandler(response, pathInfo);
-                csvHandler.setSqlContext(sqlContext);
-                csvHandler.setMessages(messages);
-                csvHandler.sendAsCsv((CsvResult) result);
+                new CsvHandler(response, pathInfo, messages).sendAsCsv((CsvResult) result);
             } else if (result instanceof ServletResult) {
                 ServletResult svtResult = (ServletResult) result;
                 if (svtResult.getMessageCode() != null) {
@@ -160,9 +154,11 @@ public class DispatcherServlet extends GenericServlet {
         WebResource webResource = WebResource.get(context);
         DispatcherMap dispatcherMap = new DispatcherMap();
         List<Class<?>> httpServiceList = new ArrayList<>();
-        List<HttpContext> httpContextList = getContextList(context.getInitParameter("http-service"));
-        for (HttpContext httpContext : httpContextList) {
-            List<Class<?>> httpServices = httpContext.getHttpServiceList();
+        List<HttpModule> httpModules = getHttpModules(context.getInitParameter("http-modules"));
+        logger.info("Http modules are configured (" + httpModules.size() + ")");
+        for (HttpModule httpModule : httpModules) {
+            logger.info(httpModule);
+            List<Class<?>> httpServices = httpModule.getHttpServiceList();
             if (httpServices != null) {
                 httpServiceList.addAll(httpServices);
             }
@@ -183,19 +179,26 @@ public class DispatcherServlet extends GenericServlet {
         }
     }
 
-    private List<HttpContext> getContextList(String services) {
-        String[] arguments = services == null ? null : services.split(",");
+    private List<HttpModule> getHttpModules(String services) {
         if (services == null) {
+            logger.error("Init parameter http modules not configured");
             return new ArrayList<>();
         }
-        List<HttpContext> httpContextList = new ArrayList<>();
+        services = services.replaceAll("[\\r\\n\\t]+", "");
+        logger.error("Init parameter http-modules is \n" + services);
+        String[] arguments = services.split(",");
+        if (0 == arguments.length) {
+            logger.error("Init parameter http modules classes not configured");
+            return new ArrayList<>();
+        }
+        List<HttpModule> httpModules = new ArrayList<>();
         for (String arg : arguments) {
-            HttpContext httpContext = getHttpContext(arg.trim());
-            if (httpContext != null) {
-                httpContextList.add(httpContext);
+            HttpModule module = getHttpModule(arg);
+            if (module != null) {
+                httpModules.add(module);
             }
         }
-        return httpContextList;
+        return httpModules;
     }
 
     private Messages getMessages(WebResource resource) {
@@ -205,13 +208,13 @@ public class DispatcherServlet extends GenericServlet {
         return messages;
     }
 
-    private HttpContext getHttpContext(String name) {
+    private HttpModule getHttpModule(String name) {
         if (name != null) {
             try {
-                Class<?> httpClass = Class.forName(name);
-                return (HttpContext) httpClass.newInstance();
+                Class<?> httpModuleClass = Class.forName(name);
+                return (HttpModule) httpModuleClass.newInstance();
             } catch (ClassNotFoundException | IllegalAccessException | InstantiationException ex) {
-                logger.error(name + " >> HttpContext would not be created : " + ex.getMessage());
+                logger.error(name + " >> HttpModule(s) would not be created : " + ex.getMessage());
                 if (logger.isDebugEnabled()) {
                     ex.printStackTrace();
                 }

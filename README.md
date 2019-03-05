@@ -83,7 +83,7 @@ IM09
 RID10 (Reference Id)
 
 - >dcapture-io renamed to dcapture-servlet
-- >dcapture-servlet handle all http servlet request and response for all HttpContext projects
+- >dcapture-servlet handle all http servlet request and response, Implemented by HttpModule
 
 ##### Mar-2019
 
@@ -91,3 +91,7 @@ RID11
 
 - >Improved error handler
 - >dcapture-api changes are updated
+
+RID12
+
+- >dcapture-api changes updated
