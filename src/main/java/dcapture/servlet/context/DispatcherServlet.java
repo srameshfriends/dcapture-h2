@@ -163,8 +163,12 @@ public class DispatcherServlet extends GenericServlet {
                 httpServiceList.addAll(httpServices);
             }
         }
-        SqlContext sqlContext = SqlFactory.getSqlContext(webResource.getSqlResource());
-        SqlDatabase sqlDatabase = new PgDatabase(sqlContext, SqlFactory.getDataSource(getDatabaseConfig(webResource)));
+        SqlDatabase sqlDatabase = getSqlDatabase(context, webResource);
+        if (sqlDatabase == null) {
+            logger.error("***** database error *****");
+            return;
+        }
+        sqlContext = sqlDatabase.getContext();
         binder.bind(SqlContext.class).toInstance(sqlContext);
         binder.bind(SqlDatabase.class).toInstance(sqlDatabase);
         binder.bind(WebResource.class).toInstance(webResource);
@@ -223,12 +227,38 @@ public class DispatcherServlet extends GenericServlet {
         return null;
     }
 
-    private Properties getDatabaseConfig(WebResource resource) {
+    private SqlDatabase getSqlDatabase(ServletContext context, WebResource resource) {
+        final String url = resource.getSetting("database.url");
+        if (url == null) {
+            logger.error("Database url should not be null");
+            return null;
+        }
         Properties properties = new Properties();
-        properties.setProperty("url", resource.getSetting("database.url"));
+        properties.setProperty("url", url);
         properties.setProperty("user", ObjectUtils.decodeBase64(resource.getSetting("database.user")));
         properties.setProperty("password", ObjectUtils.decodeBase64(resource.getSetting("database.password")));
-        return properties;
+        Class<?> driver = null;
+        try {
+            if (context.getClassLoader() == null) {
+                driver = SqlFactory.loadJdbcDriver(properties, Thread.currentThread().getContextClassLoader());
+            } else {
+                driver = SqlFactory.loadJdbcDriver(properties, context.getClassLoader());
+            }
+        } catch (ClassNotFoundException ex) {
+            logger.error(ex.getMessage());
+            if (logger.isDebugEnabled()) {
+                ex.printStackTrace();
+            }
+        }
+        if (driver == null) {
+            logger.error("Database driver not found at servlet context class loader");
+            return null;
+        }
+        SqlContext sqlContext = SqlFactory.getSqlContext(resource.getSqlResource());
+        if (url.toLowerCase().contains("postgres")) {
+            return new PgDatabase(sqlContext, SqlFactory.getDataSource(properties));
+        }
+        return null;
     }
 
     /**
