@@ -272,7 +272,7 @@ public class DispatcherServlet extends GenericServlet {
                 return type;
             }
         }
-        return "text/plain";
+        return contentType;
     }
 
     private String getMessage(String code, Object... args) {

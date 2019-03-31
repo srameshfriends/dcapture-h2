@@ -11,16 +11,13 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
 import javax.json.*;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
+import javax.servlet.http.*;
 import java.io.BufferedReader;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 class ContentReader {
+    private static final String CONTENT_DISPOSITION = "content-disposition";
     private final HttpServletRequest request;
     private Map<String, String[]> parameters;
     private JsonObject jsonObject;
@@ -61,8 +58,8 @@ class ContentReader {
                     builder.append(buffer, 0, len);
                 }
                 text = builder.toString();
-            } else {
-                throw new MessageException("application.content.error", new Object[]{pathInfo});
+            } else if (!contentType.contains("multipart")) {
+                throw new MessageException("application.content.error", new Object[]{pathInfo, contentType});
             }
         } else {
             throw new MessageException("application.httpMethod.error", new Object[]{pathInfo});

@@ -95,3 +95,7 @@ RID11
 RID12
 
 - >dcapture-api changes updated
+
+RID13
+
+- >Dispatcher servlet and content reader fix 

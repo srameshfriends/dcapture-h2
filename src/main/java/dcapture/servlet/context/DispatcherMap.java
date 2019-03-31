@@ -61,7 +61,7 @@ public class DispatcherMap implements Comparator<Dispatcher> {
                 methodSecured = get.secured();
             } else if (method.isAnnotationPresent(DELETE.class)) {
                 DELETE delete = method.getAnnotation(DELETE.class);
-                methodType = "GET";
+                methodType = "DELETE";
                 serviceSuffix = delete.value();
                 methodSecured = delete.secured();
             } else {
