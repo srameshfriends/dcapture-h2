@@ -5,10 +5,10 @@ import dcapture.api.postgres.PgDatabase;
 import dcapture.api.sql.SqlContext;
 import dcapture.api.sql.SqlDatabase;
 import dcapture.api.sql.SqlFactory;
+import dcapture.api.support.ContextResource;
 import dcapture.api.support.MessageException;
 import dcapture.api.support.Messages;
 import dcapture.api.support.ObjectUtils;
-import dcapture.api.support.WebResource;
 import io.github.pustike.inject.Injector;
 import io.github.pustike.inject.Injectors;
 import io.github.pustike.inject.bind.Binder;
@@ -20,6 +20,7 @@ import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -52,7 +53,7 @@ public class DispatcherServlet extends GenericServlet {
         messages = injector.getInstance(Messages.class);
         config.getServletContext().setAttribute(Injector.class.getName(), injector);
         if (logger.isDebugEnabled()) {
-            WebResource resource = injector.getInstance(WebResource.class);
+            ContextResource resource = injector.getInstance(ContextResource.class);
             logger.info(resource.toString());
             logger.info(dispatcherMap.toString());
         }
@@ -151,7 +152,9 @@ public class DispatcherServlet extends GenericServlet {
     }
 
     private void configureBinder(ServletContext context, Binder binder) {
-        WebResource webResource = WebResource.get(context);
+        ContextResource resource = ContextResource.get(context);
+        String defaultLanguage = resource.getSetting("language");
+        Messages messages = getMessages(context, resource.getMessagePaths(), defaultLanguage);
         DispatcherMap dispatcherMap = new DispatcherMap();
         List<Class<?>> httpServiceList = new ArrayList<>();
         List<HttpModule> httpModules = getHttpModules(context.getInitParameter("http-modules"));
@@ -163,7 +166,7 @@ public class DispatcherServlet extends GenericServlet {
                 httpServiceList.addAll(httpServices);
             }
         }
-        SqlDatabase sqlDatabase = getSqlDatabase(context, webResource);
+        SqlDatabase sqlDatabase = getSqlDatabase(context, resource);
         if (sqlDatabase == null) {
             logger.error("***** database error *****");
             return;
@@ -171,8 +174,8 @@ public class DispatcherServlet extends GenericServlet {
         sqlContext = sqlDatabase.getContext();
         binder.bind(SqlContext.class).toInstance(sqlContext);
         binder.bind(SqlDatabase.class).toInstance(sqlDatabase);
-        binder.bind(WebResource.class).toInstance(webResource);
-        binder.bind(Messages.class).toInstance(getMessages(webResource));
+        binder.bind(ContextResource.class).toInstance(resource);
+        binder.bind(Messages.class).toInstance(messages);
         binder.bind(DispatcherMap.class).toInstance(dispatcherMap);
         for (Class<?> httpClass : httpServiceList) {
             binder.bind(httpClass);
@@ -205,10 +208,17 @@ public class DispatcherServlet extends GenericServlet {
         return httpModules;
     }
 
-    private Messages getMessages(WebResource resource) {
+    private Messages getMessages(ServletContext context, Set<String> paths, String defaultLanguage) {
         Messages messages = new Messages();
-        messages.setLanguage(resource.getSetting("language"));
-        messages.loadPropertiesMap(resource.getMessages(), true);
+        messages.setLanguage(defaultLanguage);
+        try {
+            messages.loadProperties(context, paths, true);
+        } catch (IOException ex) {
+            logger.error("Message sources loading error : " + ex.getMessage());
+            if (logger.isDebugEnabled()) {
+                ex.printStackTrace();
+            }
+        }
         return messages;
     }
 
@@ -227,7 +237,7 @@ public class DispatcherServlet extends GenericServlet {
         return null;
     }
 
-    private SqlDatabase getSqlDatabase(ServletContext context, WebResource resource) {
+    private SqlDatabase getSqlDatabase(ServletContext context, ContextResource resource) {
         final String url = resource.getSetting("database.url");
         if (url == null) {
             logger.error("Database url should not be null");
@@ -254,7 +264,7 @@ public class DispatcherServlet extends GenericServlet {
             logger.error("Database driver not found at servlet context class loader");
             return null;
         }
-        SqlContext sqlContext = SqlFactory.getSqlContext(resource.getSqlResource());
+        SqlContext sqlContext = SqlFactory.getSqlContext(context, resource.getSqlPaths());
         if (url.toLowerCase().contains("postgres")) {
             return new PgDatabase(sqlContext, SqlFactory.getDataSource(properties));
         }
