@@ -105,3 +105,9 @@ RID13
 RID12
 
 - >dcapture-api changes updated
+
+##### Oct-2019
+
+RID13
+
+- >Authentication error message improved

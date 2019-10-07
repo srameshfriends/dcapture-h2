@@ -27,7 +27,7 @@ import java.util.*;
 @MultipartConfig(fileSizeThreshold = 1024 * 1024, maxFileSize = 1024 * 1024 * 5, maxRequestSize = 1024 * 1024 * 10)
 public class DispatcherServlet extends GenericServlet {
     private static final Logger logger = Logger.getLogger(DispatcherServlet.class);
-    private static final int SC_BAD_REQUEST = 400;
+    private static final int SC_BAD_REQUEST = 400, SC_UNAUTHORIZED = 401;
     private final Set<String> validContentTypes, validMethods;
     private DispatcherMap dispatcherMap;
     private Injector injector;
@@ -79,7 +79,7 @@ public class DispatcherServlet extends GenericServlet {
         if (dispatcher.isSecured()) {
             HttpSession session = request.getSession(false);
             if (session == null || session.getId() == null) {
-                ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.unauthorized.error", pathInfo));
+                ResponseHandler.send(response, SC_UNAUTHORIZED, getMessage("application.unauthorized.error", pathInfo));
                 return;
             }
         }
@@ -238,15 +238,9 @@ public class DispatcherServlet extends GenericServlet {
     }
 
     private SqlDatabase getSqlDatabase(ServletContext context, ContextResource resource) {
-        final String url = resource.getSetting("database.url");
-        if (url == null) {
-            logger.error("Database url should not be null");
-            return null;
-        }
-        Properties properties = new Properties();
-        properties.setProperty("url", url);
-        properties.setProperty("user", ObjectUtils.decodeBase64(resource.getSetting("database.user")));
-        properties.setProperty("password", ObjectUtils.decodeBase64(resource.getSetting("database.password")));
+        Properties properties = resource.getDatabaseConfig();
+        properties.setProperty("user", ObjectUtils.decodeBase64(properties.getProperty("user")));
+        properties.setProperty("password", ObjectUtils.decodeBase64(properties.getProperty("password")));
         Class<?> driver = null;
         try {
             if (context.getClassLoader() == null) {
@@ -264,8 +258,8 @@ public class DispatcherServlet extends GenericServlet {
             logger.error("Database driver not found at servlet context class loader");
             return null;
         }
-        SqlContext sqlContext = SqlFactory.getSqlContext(context, resource.getSqlPaths());
-        if (url.toLowerCase().contains("postgres")) {
+        SqlContext sqlContext = SqlFactory.getSqlContext(context, resource.getSqlPaths(), driver.getName());
+        if (properties.getProperty("url").toLowerCase().contains("postgres")) {
             return new PgDatabase(sqlContext, SqlFactory.getDataSource(properties));
         }
         return null;
