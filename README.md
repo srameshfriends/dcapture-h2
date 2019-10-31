@@ -111,3 +111,7 @@ RID12
 RID13
 
 - >Authentication error message improved
+
+RID14
+
+- >HttpModule : getEntityList() method added to map with sql tables and entity classes

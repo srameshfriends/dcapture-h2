@@ -156,22 +156,29 @@ public class DispatcherServlet extends GenericServlet {
         String defaultLanguage = resource.getSetting("language");
         Messages messages = getMessages(context, resource.getMessagePaths(), defaultLanguage);
         DispatcherMap dispatcherMap = new DispatcherMap();
-        List<Class<?>> httpServiceList = new ArrayList<>();
+
         List<HttpModule> httpModules = getHttpModules(context.getInitParameter("http-modules"));
-        logger.info("Http modules are configured (" + httpModules.size() + ")");
-        for (HttpModule httpModule : httpModules) {
-            logger.info(httpModule);
-            List<Class<?>> httpServices = httpModule.getHttpServiceList();
-            if (httpServices != null) {
-                httpServiceList.addAll(httpServices);
-            }
-        }
         SqlDatabase sqlDatabase = getSqlDatabase(context, resource);
         if (sqlDatabase == null) {
             logger.error("***** database error *****");
             return;
         }
         sqlContext = sqlDatabase.getContext();
+        logger.info("Http modules are configured (" + httpModules.size() + ")");
+        List<Class<?>> entityList = new ArrayList<>();
+        List<Class<?>> httpServiceList = new ArrayList<>();
+        for (HttpModule httpModule : httpModules) {
+            logger.info(httpModule);
+            List<Class<?>> entities = httpModule.getEntityList();
+            List<Class<?>> httpServices = httpModule.getHttpServiceList();
+            if (entities != null) {
+                entityList.addAll(entities);
+            }
+            if (httpServices != null) {
+                httpServiceList.addAll(httpServices);
+            }
+        }
+        SqlFactory.setEntityList(sqlContext, entityList);
         binder.bind(SqlContext.class).toInstance(sqlContext);
         binder.bind(SqlDatabase.class).toInstance(sqlDatabase);
         binder.bind(ContextResource.class).toInstance(resource);
@@ -222,7 +229,7 @@ public class DispatcherServlet extends GenericServlet {
         return messages;
     }
 
-    private HttpModule getHttpModule(String name) {
+    private HttpModule getHttpModule(String name)  {
         if (name != null) {
             try {
                 Class<?> httpModuleClass = Class.forName(name);
