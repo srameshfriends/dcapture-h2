@@ -12,7 +12,6 @@ import dcapture.api.support.ObjectUtils;
 import io.github.pustike.inject.Injector;
 import io.github.pustike.inject.Injectors;
 import io.github.pustike.inject.bind.Binder;
-import io.github.pustike.inject.bind.Module;
 import org.apache.log4j.Logger;
 
 import javax.servlet.*;
@@ -47,7 +46,7 @@ public class DispatcherServlet extends GenericServlet {
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-        injector = Injectors.create((Module) binder -> configureBinder(config.getServletContext(), binder));
+        injector = Injectors.create(binder -> configureBinder(config.getServletContext(), binder));
         dispatcherMap = injector.getInstance(DispatcherMap.class);
         sqlContext = injector.getInstance(SqlContext.class);
         messages = injector.getInstance(Messages.class);
@@ -66,11 +65,11 @@ public class DispatcherServlet extends GenericServlet {
         final String pathInfo = getValidPathInfo(request.getPathInfo());
         final String method = getValidMethod(request.getMethod());
         final String contentType = getValidContentType(request.getContentType());
-        if (!dispatcherMap.isHttpService(pathInfo)) {
+        Dispatcher dispatcher = dispatcherMap.getDispatcher(pathInfo);
+        if (dispatcher == null) {
             ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.path.error", pathInfo));
             return;
         }
-        Dispatcher dispatcher = dispatcherMap.getDispatcher(pathInfo);
         if (!method.equals(dispatcher.getHttpMethod())) {
             Object[] args = new String[]{pathInfo, method, dispatcher.getHttpMethod()};
             ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.httpMethod.error", args));
@@ -85,7 +84,7 @@ public class DispatcherServlet extends GenericServlet {
         }
         ContentReader contentReader;
         try {
-            contentReader = new ContentReader(request, pathInfo, method, contentType);
+            contentReader = new ContentReader(request, pathInfo, method, contentType, dispatcher.getPath());
         } catch (Exception ex) {
             contentReader = null;
             if (logger.isDebugEnabled()) {
@@ -121,6 +120,11 @@ public class DispatcherServlet extends GenericServlet {
                 Object paramFirst = contentReader.getMethodParameter(sqlContext, paramTypes[0], response);
                 Object paramSecond = contentReader.getMethodParameter(sqlContext, paramTypes[1], response);
                 result = serviceMethod.invoke(serviceBean, paramFirst, paramSecond);
+            } else if (dispatcher.isPattern() && 3 == paramTypes.length) {
+                Object paramFirst = contentReader.getMethodParameter(sqlContext, paramTypes[0], response);
+                Object paramSecond = contentReader.getMethodParameter(sqlContext, paramTypes[1], response);
+                Object paramThree = contentReader.getMethodParameter(sqlContext, paramTypes[2], response);
+                result = serviceMethod.invoke(serviceBean, paramFirst, paramSecond, paramThree);
             } else if (!void.class.equals(dispatcher.getMethod().getReturnType())) {
                 ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.response.type.error", pathInfo));
                 return;
@@ -139,7 +143,13 @@ public class DispatcherServlet extends GenericServlet {
                     ResponseHandler.send(response, svtResult.getStatus(), svtResult.getMessage());
                 }
             } else {
-                ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.method.parameter.error", pathInfo));
+                if (!response.isCommitted()) {
+                    if (result == null) {
+                        ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.method.parameter.error", pathInfo));
+                    } else if (!void.class.equals(result.getClass())) {
+                        ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.method.parameter.error", pathInfo));
+                    }
+                }
             }
         } catch (Exception ex) {
             String msg = getRootCause(ex);
@@ -155,8 +165,6 @@ public class DispatcherServlet extends GenericServlet {
         ContextResource resource = ContextResource.get(context);
         String defaultLanguage = resource.getSetting("language");
         Messages messages = getMessages(context, resource.getMessagePaths(), defaultLanguage);
-        DispatcherMap dispatcherMap = new DispatcherMap();
-
         List<HttpModule> httpModules = getHttpModules(context.getInitParameter("http-modules"));
         SqlDatabase sqlDatabase = getSqlDatabase(context, resource);
         if (sqlDatabase == null) {
@@ -183,13 +191,12 @@ public class DispatcherServlet extends GenericServlet {
         binder.bind(SqlDatabase.class).toInstance(sqlDatabase);
         binder.bind(ContextResource.class).toInstance(resource);
         binder.bind(Messages.class).toInstance(messages);
-        binder.bind(DispatcherMap.class).toInstance(dispatcherMap);
-        for (Class<?> httpClass : httpServiceList) {
-            binder.bind(httpClass);
-            String errorMessage = dispatcherMap.addHttpService(httpClass);
-            if (errorMessage != null) {
-                logger.info("HTTP SERVICE ERROR : " + errorMessage);
-            }
+        try {
+            httpServiceList.forEach(binder::bind);
+            binder.bind(DispatcherMap.class).toInstance(DispatcherMap.create(httpServiceList));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            System.exit(1);
         }
     }
 
@@ -229,7 +236,7 @@ public class DispatcherServlet extends GenericServlet {
         return messages;
     }
 
-    private HttpModule getHttpModule(String name)  {
+    private HttpModule getHttpModule(String name) {
         if (name != null) {
             try {
                 Class<?> httpModuleClass = Class.forName(name);

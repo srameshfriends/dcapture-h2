@@ -6,10 +6,11 @@ import java.util.Objects;
 public class Dispatcher {
     private final String path, httpMethod;
     private final Method method;
-    private final boolean secured;
+    private final boolean secured, pattern;
 
-    Dispatcher(String path, String httpMethod, Method method, boolean secured) {
+    Dispatcher(String path, boolean pattern, String httpMethod, Method method, boolean secured) {
         this.path = path;
+        this.pattern = pattern;
         this.httpMethod = httpMethod;
         this.method = method;
         this.secured = secured;
@@ -17,6 +18,10 @@ public class Dispatcher {
 
     String getPath() {
         return path;
+    }
+
+    boolean isPattern() {
+        return pattern;
     }
 
     String getHttpMethod() {

@@ -17,19 +17,20 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 class ContentReader {
-    private static final String CONTENT_DISPOSITION = "content-disposition";
     private final HttpServletRequest request;
+    private final String pathInfo, pattern;
     private Map<String, String[]> parameters;
     private JsonObject jsonObject;
     private JsonArray jsonArray;
     private List<CSVRecord> csvRecords;
     private Map<String, Integer> csvHeaders;
     private String text;
-    private final String pathInfo;
 
-    ContentReader(HttpServletRequest request, String pathInfo, String method, String contentType) throws Exception {
+    ContentReader(HttpServletRequest request, String pathInfo, String method, String contentType, String pattern)
+            throws Exception {
         this.request = request;
         this.pathInfo = pathInfo;
+        this.pattern = pattern;
         if ("GET".equals(method)) {
             parameters = request.getParameterMap();
         } else if ("POST".equals(method) || "DELETE".equals(method)) {
@@ -58,8 +59,6 @@ class ContentReader {
                     builder.append(buffer, 0, len);
                 }
                 text = builder.toString();
-            } else if (!contentType.contains("multipart")) {
-                throw new MessageException("application.content.error", new Object[]{pathInfo, contentType});
             }
         } else {
             throw new MessageException("application.httpMethod.error", new Object[]{pathInfo});
@@ -85,6 +84,9 @@ class ContentReader {
             return response;
         } else if (HttpServletRequest.class.equals(pCls) || HttpServletRequestWrapper.class.equals(pCls)) {
             return request;
+        } else if(pattern != null && String.class.equals(pCls)) {
+            String info = pathInfo.replace(pattern, "");
+            return info.startsWith("/") ? info.substring(1) : info;
         }
         throw new MessageException("application.parameter.error", new Object[]{pathInfo});
     }

@@ -17,7 +17,10 @@ Application Dispatcher Servlet
 - Localization loaded from webapp resource base > locale/*-en.properties, locale/*-ta.properties.
 - Application admin console is responsible for loading and update localization.
 - DispatcherListener, DispatcherServlet helps to run applications
-- Session, Backup, Email and sms notification service api accessible from applications   
+- Session, Backup, Email and sms notification service api accessible from applications
+- HttpService : method level annotation like POST, GET, DELETE url pattern map acceptable ( /* ), 
+method(String parameter) received suffix of url. example [ http://api/upload/profile/* ] this is pattern map, 
+The user requested url : [ http://api/upload/profile/kannamma ] String parameter received value : ( kannamma )       
 
 ## Changes and Commits
 
@@ -115,3 +118,9 @@ RID13
 RID14
 
 - >HttpModule : getEntityList() method added to map with sql tables and entity classes
+
+##### Nov-2019
+
+RID15
+
+- >DispatcherServlet : void result and null response error improved 
