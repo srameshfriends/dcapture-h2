@@ -1,56 +1,44 @@
 package dcapture.servlet.context;
 
 import dcapture.api.io.*;
-import dcapture.api.postgres.PgDatabase;
 import dcapture.api.sql.SqlContext;
-import dcapture.api.sql.SqlDatabase;
-import dcapture.api.sql.SqlFactory;
 import dcapture.api.support.ContextResource;
 import dcapture.api.support.MessageException;
 import dcapture.api.support.Messages;
-import dcapture.api.support.ObjectUtils;
 import io.github.pustike.inject.Injector;
-import io.github.pustike.inject.Injectors;
-import io.github.pustike.inject.bind.Binder;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.log4j.Logger;
 
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.json.JsonStructure;
 import javax.servlet.*;
 import javax.servlet.annotation.MultipartConfig;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import java.io.IOException;
+import javax.servlet.http.*;
+import java.io.BufferedReader;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @MultipartConfig(fileSizeThreshold = 1024 * 1024, maxFileSize = 1024 * 1024 * 5, maxRequestSize = 1024 * 1024 * 10)
 public class DispatcherServlet extends GenericServlet {
     private static final Logger logger = Logger.getLogger(DispatcherServlet.class);
     private static final int SC_BAD_REQUEST = 400, SC_UNAUTHORIZED = 401;
-    private final Set<String> validContentTypes, validMethods;
     private DispatcherMap dispatcherMap;
     private Injector injector;
     private SqlContext sqlContext;
     private Messages messages;
 
-    public DispatcherServlet() {
-        Set<String> hashSet = new HashSet<>();
-        Collections.addAll(hashSet, "multipart/form-data",
-                "text/html", "text/plain", "text/csv", "application/json", "application/x-www-form-urlencoded");
-        validContentTypes = Collections.unmodifiableSet(hashSet);
-        Set<String> hashSet2 = new HashSet<>();
-        Collections.addAll(hashSet2, "GET", "POST", "DELETE", "HEAD", "PUT", "CONNECT", "TRACE", "OPTIONS");
-        validMethods = Collections.unmodifiableSet(hashSet2);
-    }
-
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-        injector = Injectors.create(binder -> configureBinder(config.getServletContext(), binder));
+        injector = (Injector)config.getServletContext().getAttribute(Injector.class.getName());
         dispatcherMap = injector.getInstance(DispatcherMap.class);
         sqlContext = injector.getInstance(SqlContext.class);
         messages = injector.getInstance(Messages.class);
-        config.getServletContext().setAttribute(Injector.class.getName(), injector);
         if (logger.isDebugEnabled()) {
             ContextResource resource = injector.getInstance(ContextResource.class);
             logger.info(resource.toString());
@@ -60,33 +48,31 @@ public class DispatcherServlet extends GenericServlet {
 
     @Override
     public void service(ServletRequest req, ServletResponse resp) {
+        RequestInfo info = (RequestInfo) req.getAttribute(RequestInfo.class.getName());
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) resp;
-        final String pathInfo = getValidPathInfo(request.getPathInfo());
-        final String method = getValidMethod(request.getMethod());
-        final String contentType = getValidContentType(request.getContentType());
-        Dispatcher dispatcher = dispatcherMap.getDispatcher(pathInfo);
+        Dispatcher dispatcher = dispatcherMap.getDispatcher(info.getPath());
         if (dispatcher == null) {
-            ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.path.error", pathInfo));
+            ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.path.error", info.getPath()));
             return;
         }
-        if (!method.equals(dispatcher.getHttpMethod())) {
-            Object[] args = new String[]{pathInfo, method, dispatcher.getHttpMethod()};
+        if (!info.getMethod().equals(dispatcher.getHttpMethod())) {
+            Object[] args = new String[]{info.getPath(), info.getMethod(), dispatcher.getHttpMethod()};
             ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.httpMethod.error", args));
             return;
         }
         if (dispatcher.isSecured()) {
             HttpSession session = request.getSession(false);
             if (session == null || session.getId() == null) {
-                ResponseHandler.send(response, SC_UNAUTHORIZED, getMessage("application.unauthorized.error", pathInfo));
+                ResponseHandler.send(response, SC_UNAUTHORIZED, getMessage("application.unauthorized.error", info.getPath()));
                 return;
             }
         }
-        ContentReader contentReader;
+        RequestReader reader;
         try {
-            contentReader = new ContentReader(request, pathInfo, method, contentType, dispatcher.getPath());
+            reader = new RequestReader(request, dispatcher.getPath());
         } catch (Exception ex) {
-            contentReader = null;
+            reader = null;
             if (logger.isDebugEnabled()) {
                 ex.printStackTrace();
             }
@@ -98,10 +84,10 @@ public class DispatcherServlet extends GenericServlet {
                     ResponseHandler.send(response, SC_BAD_REQUEST, getMessage(msgEx.getErrorCode(), msgEx.getArguments()));
                 }
             } else {
-                ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.content.error", pathInfo, ex.getMessage()));
+                ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.content.error", info.getPath(), ex.getMessage()));
             }
         }
-        if (contentReader == null) {
+        if (reader == null) {
             return;
         }
         try {
@@ -112,29 +98,29 @@ public class DispatcherServlet extends GenericServlet {
             Class<?>[] paramTypes = serviceMethod.getParameterTypes();
             Object result = null;
             if (1 == paramTypes.length) {
-                Object parameter = contentReader.getMethodParameter(sqlContext, paramTypes[0], response);
+                Object parameter = reader.getMethodParameter(sqlContext, paramTypes[0], response);
                 result = serviceMethod.invoke(serviceBean, parameter);
             } else if (0 == paramTypes.length) {
                 result = serviceMethod.invoke(serviceBean);
             } else if (2 == paramTypes.length) {
-                Object paramFirst = contentReader.getMethodParameter(sqlContext, paramTypes[0], response);
-                Object paramSecond = contentReader.getMethodParameter(sqlContext, paramTypes[1], response);
+                Object paramFirst = reader.getMethodParameter(sqlContext, paramTypes[0], response);
+                Object paramSecond = reader.getMethodParameter(sqlContext, paramTypes[1], response);
                 result = serviceMethod.invoke(serviceBean, paramFirst, paramSecond);
             } else if (dispatcher.isPattern() && 3 == paramTypes.length) {
-                Object paramFirst = contentReader.getMethodParameter(sqlContext, paramTypes[0], response);
-                Object paramSecond = contentReader.getMethodParameter(sqlContext, paramTypes[1], response);
-                Object paramThree = contentReader.getMethodParameter(sqlContext, paramTypes[2], response);
+                Object paramFirst = reader.getMethodParameter(sqlContext, paramTypes[0], response);
+                Object paramSecond = reader.getMethodParameter(sqlContext, paramTypes[1], response);
+                Object paramThree = reader.getMethodParameter(sqlContext, paramTypes[2], response);
                 result = serviceMethod.invoke(serviceBean, paramFirst, paramSecond, paramThree);
             } else if (!void.class.equals(dispatcher.getMethod().getReturnType())) {
-                ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.response.type.error", pathInfo));
+                ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.response.type.error", info.getPath()));
                 return;
             } else {
                 logger.error("Unknown http service result type is received : " + dispatcher.toString());
             }
             if (result instanceof JsonResult) {
-                new JsonHandler(response, pathInfo, messages).setSqlContext(sqlContext).send((JsonResult) result);
+                new JsonHandler(response, info.getPath(), messages).setSqlContext(sqlContext).send((JsonResult) result);
             } else if (result instanceof CsvResult) {
-                new CsvHandler(response, pathInfo, messages).sendAsCsv((CsvResult) result);
+                new CsvHandler(response, info.getPath(), messages).sendAsCsv((CsvResult) result);
             } else if (result instanceof ServletResult) {
                 ServletResult svtResult = (ServletResult) result;
                 if (svtResult.getMessageCode() != null) {
@@ -145,9 +131,9 @@ public class DispatcherServlet extends GenericServlet {
             } else {
                 if (!response.isCommitted()) {
                     if (result == null) {
-                        ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.method.parameter.error", pathInfo));
+                        ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.method.parameter.error", info.getPath()));
                     } else if (!void.class.equals(result.getClass())) {
-                        ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.method.parameter.error", pathInfo));
+                        ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.method.parameter.error", info.getPath()));
                     }
                 }
             }
@@ -161,166 +147,8 @@ public class DispatcherServlet extends GenericServlet {
         }
     }
 
-    private void configureBinder(ServletContext context, Binder binder) {
-        ContextResource resource = ContextResource.get(context);
-        String defaultLanguage = resource.getSetting("language");
-        Messages messages = getMessages(context, resource.getMessagePaths(), defaultLanguage);
-        List<HttpModule> httpModules = getHttpModules(context.getInitParameter("http-modules"));
-        SqlDatabase sqlDatabase = getSqlDatabase(context, resource);
-        if (sqlDatabase == null) {
-            logger.error("***** database error *****");
-            return;
-        }
-        sqlContext = sqlDatabase.getContext();
-        logger.info("Http modules are configured (" + httpModules.size() + ")");
-        List<Class<?>> entityList = new ArrayList<>();
-        List<Class<?>> httpServiceList = new ArrayList<>();
-        for (HttpModule httpModule : httpModules) {
-            logger.info(httpModule);
-            List<Class<?>> entities = httpModule.getEntityList();
-            List<Class<?>> httpServices = httpModule.getHttpServiceList();
-            if (entities != null) {
-                entityList.addAll(entities);
-            }
-            if (httpServices != null) {
-                httpServiceList.addAll(httpServices);
-            }
-        }
-        SqlFactory.setEntityList(sqlContext, entityList);
-        binder.bind(SqlContext.class).toInstance(sqlContext);
-        binder.bind(SqlDatabase.class).toInstance(sqlDatabase);
-        binder.bind(ContextResource.class).toInstance(resource);
-        binder.bind(Messages.class).toInstance(messages);
-        try {
-            httpServiceList.forEach(binder::bind);
-            binder.bind(DispatcherMap.class).toInstance(DispatcherMap.create(httpServiceList));
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            System.exit(1);
-        }
-    }
-
-    private List<HttpModule> getHttpModules(String services) {
-        if (services == null) {
-            logger.error("Init parameter http modules not configured");
-            return new ArrayList<>();
-        }
-        services = services.replaceAll("[\\r\\n\\t]+", "");
-        logger.error("Init parameter http-modules is \n" + services);
-        String[] arguments = services.split(",");
-        if (0 == arguments.length) {
-            logger.error("Init parameter http modules classes not configured");
-            return new ArrayList<>();
-        }
-        List<HttpModule> httpModules = new ArrayList<>();
-        for (String arg : arguments) {
-            HttpModule module = getHttpModule(arg);
-            if (module != null) {
-                httpModules.add(module);
-            }
-        }
-        return httpModules;
-    }
-
-    private Messages getMessages(ServletContext context, Set<String> paths, String defaultLanguage) {
-        Messages messages = new Messages();
-        messages.setLanguage(defaultLanguage);
-        try {
-            messages.loadProperties(context, paths, true);
-        } catch (IOException ex) {
-            logger.error("Message sources loading error : " + ex.getMessage());
-            if (logger.isDebugEnabled()) {
-                ex.printStackTrace();
-            }
-        }
-        return messages;
-    }
-
-    private HttpModule getHttpModule(String name) {
-        if (name != null) {
-            try {
-                Class<?> httpModuleClass = Class.forName(name);
-                return (HttpModule) httpModuleClass.newInstance();
-            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException ex) {
-                logger.error(name + " >> HttpModule(s) would not be created : " + ex.getMessage());
-                if (logger.isDebugEnabled()) {
-                    ex.printStackTrace();
-                }
-            }
-        }
-        return null;
-    }
-
-    private SqlDatabase getSqlDatabase(ServletContext context, ContextResource resource) {
-        Properties properties = resource.getDatabaseConfig();
-        properties.setProperty("user", ObjectUtils.decodeBase64(properties.getProperty("user")));
-        properties.setProperty("password", ObjectUtils.decodeBase64(properties.getProperty("password")));
-        Class<?> driver = null;
-        try {
-            if (context.getClassLoader() == null) {
-                driver = SqlFactory.loadJdbcDriver(properties, Thread.currentThread().getContextClassLoader());
-            } else {
-                driver = SqlFactory.loadJdbcDriver(properties, context.getClassLoader());
-            }
-        } catch (ClassNotFoundException ex) {
-            logger.error(ex.getMessage());
-            if (logger.isDebugEnabled()) {
-                ex.printStackTrace();
-            }
-        }
-        if (driver == null) {
-            logger.error("Database driver not found at servlet context class loader");
-            return null;
-        }
-        SqlContext sqlContext = SqlFactory.getSqlContext(context, resource.getSqlPaths(), driver.getName());
-        if (properties.getProperty("url").toLowerCase().contains("postgres")) {
-            return new PgDatabase(sqlContext, SqlFactory.getDataSource(properties));
-        }
-        return null;
-    }
-
-    /**
-     * Default content type is [text/plain]
-     * Http servlet request supported content type is [text/plain, application/json, text/html, text/csv, application/x-www-form-urlencoded, multipart/form-data]
-     */
-    private String getValidContentType(String contentType) {
-        contentType = contentType == null ? "text/plain" : contentType.toLowerCase();
-        for (String type : validContentTypes) {
-            if (contentType.contains(type)) {
-                return type;
-            }
-        }
-        return contentType;
-    }
-
     private String getMessage(String code, Object... args) {
         return messages.getMessage(code, args);
-    }
-
-    /**
-     * Default method is @GET
-     * Http servlet request method supported only @GET, @POST and @DELETE
-     */
-    private String getValidMethod(String method) {
-        method = method == null ? "GET" : method.toUpperCase();
-        return validMethods.contains(method) ? method : "GET";
-    }
-
-    /**
-     * Http servlet request pathInfo null safe converted to lower case char
-     */
-    private String getValidPathInfo(String pathInfo) {
-        pathInfo = pathInfo == null ? "" : pathInfo.trim().toLowerCase();
-        if (pathInfo.equals("") || pathInfo.equals("/")) {
-            return "";
-        }
-        if (pathInfo.endsWith("/")) {
-            pathInfo = pathInfo.substring(0, pathInfo.lastIndexOf("/"));
-        }
-        if (!pathInfo.startsWith("/")) {
-            pathInfo = "/".concat(pathInfo);
-        }
-        return pathInfo;
     }
 
     private String getRootCause(Throwable throwable) {
@@ -334,6 +162,83 @@ public class DispatcherServlet extends GenericServlet {
                 }
             }
             return throwable.getMessage();
+        }
+    }
+
+    private static class RequestReader {
+        private final HttpServletRequest request;
+        private final String pathInfo, pattern;
+        private Map<String, String[]> parameters;
+        private JsonObject jsonObject;
+        private JsonArray jsonArray;
+        private List<CSVRecord> csvRecords;
+        private Map<String, Integer> csvHeaders;
+        private String text;
+
+        RequestReader(HttpServletRequest request, String pattern)
+                throws Exception {
+            RequestInfo info = (RequestInfo)request.getAttribute(RequestInfo.class.getName());
+            this.request = request;
+            this.pathInfo = info.getPath();
+            this.pattern = pattern;
+            if ("GET".equals(info.getMethod())) {
+                parameters = request.getParameterMap();
+            } else if ("POST".equals(info.getMethod()) || "DELETE".equals(info.getMethod())) {
+                if (info.getContentType().contains("json")) {
+                    JsonStructure json = Json.createReader(request.getInputStream()).read();
+                    if (json instanceof JsonObject) {
+                        jsonObject = (JsonObject) json;
+                    } else if (json instanceof JsonArray) {
+                        jsonArray = (JsonArray) json;
+                    } else {
+                        throw new MessageException("application.json.error", new Object[]{pathInfo});
+                    }
+                } else if (info.getContentType().contains("csv")) {
+                    CSVParser parser = CSVParser.parse(request.getInputStream(), StandardCharsets.UTF_8,
+                            CSVFormat.DEFAULT.withHeader());
+                    csvRecords = parser.getRecords();
+                    csvHeaders = parser.getHeaderMap();
+                } else if ("application/x-www-form-urlencoded".equals(info.getContentType())) {
+                    parameters = request.getParameterMap();
+                } else if (info.getContentType().contains("text")) {
+                    BufferedReader reader = request.getReader();
+                    final char[] buffer = new char[4 * 1024];
+                    int len;
+                    final StringBuilder builder = new StringBuilder();
+                    while ((len = reader.read(buffer, 0, buffer.length)) != -1) {
+                        builder.append(buffer, 0, len);
+                    }
+                    text = builder.toString();
+                }
+            } else {
+                throw new MessageException("application.httpMethod.error", new Object[]{pathInfo});
+            }
+        }
+
+        Object getMethodParameter(SqlContext sqlContext, Class<?> pCls, HttpServletResponse response) throws MessageException {
+            if (JsonRequest.class.equals(pCls)) {
+                if (jsonObject != null) {
+                    return new JsonRequest(request, sqlContext, jsonObject);
+                } else if (jsonArray != null) {
+                    return new JsonRequest(request, sqlContext, jsonArray);
+                } else {
+                    throw new MessageException("application.json.type.error", new Object[]{pathInfo});
+                }
+            } else if (CsvRequest.class.equals(pCls)) {
+                return new CsvRequest(request, sqlContext, csvRecords, csvHeaders);
+            } else if (FormRequest.class.equals(pCls)) {
+                return new FormRequest(request, sqlContext, parameters);
+            } else if (HtmlRequest.class.equals(pCls)) {
+                return new HtmlRequest(request, text);
+            } else if (HttpServletResponse.class.equals(pCls) || HttpServletResponseWrapper.class.equals(pCls)) {
+                return response;
+            } else if (HttpServletRequest.class.equals(pCls) || HttpServletRequestWrapper.class.equals(pCls)) {
+                return request;
+            } else if(pattern != null && String.class.equals(pCls)) {
+                String info = pathInfo.replace(pattern, "");
+                return info.startsWith("/") ? info.substring(1) : info;
+            }
+            throw new MessageException("application.parameter.error", new Object[]{pathInfo});
         }
     }
 }

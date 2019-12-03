@@ -124,3 +124,10 @@ RID14
 RID15
 
 - >DispatcherServlet : void result and null response error improved 
+
+##### Dec-2019
+
+RID16
+
+- >Dispatcher initialize listener and authentication filter are added.
+-  Token based authentication to be updated 
