@@ -130,4 +130,5 @@ RID15
 RID16
 
 - >Dispatcher initialize listener and authentication filter are added.
--  Token based authentication to be updated 
+- >Custom token based authentication updated
+- >Two factor authentication to be updated 

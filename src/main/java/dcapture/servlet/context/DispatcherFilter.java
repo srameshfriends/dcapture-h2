@@ -1,16 +1,26 @@
 package dcapture.servlet.context;
 
+import dcapture.api.io.ResponseHandler;
+import dcapture.api.support.Messages;
+import dcapture.api.support.SessionHandler;
+import io.github.pustike.inject.Injector;
+import org.apache.log4j.Logger;
+import sun.security.krb5.internal.PAData;
+
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 public class DispatcherFilter implements Filter {
+    private static final Logger logger = Logger.getLogger(DispatcherFilter.class);
+    private static final int SC_UNAUTHORIZED = 401, SC_BAD_REQUEST = 400;
     private final Set<String> validContentTypes, validMethods;
+    private DispatcherMap dispatcherMap;
+    private SessionHandler sessionHandler;
 
     public DispatcherFilter() {
         Set<String> hashSet = new HashSet<>();
@@ -23,9 +33,19 @@ public class DispatcherFilter implements Filter {
     }
 
     @Override
-    public void init(FilterConfig config) throws ServletException {
-        System.out.println("AUTHENTICATION FILTER : " + LocalDateTime.now());
-
+    public void init(FilterConfig config) {
+        Injector injector = (Injector)config.getServletContext().getAttribute(Injector.class.getName());
+        dispatcherMap = injector.getInstance(DispatcherMap.class);
+        String handlerName = config.getServletContext().getInitParameter(SessionHandler.class.getName());
+        try {
+            Class<?> handlerClass = Class.forName(handlerName);
+            sessionHandler = (SessionHandler) injector.getInstance(handlerClass);
+        } catch (ClassNotFoundException ex) {
+            logger.error("ERROR : To Create Session handler  : " + ex.getMessage());
+            if (logger.isDebugEnabled()) {
+                ex.printStackTrace();
+            }
+        }
     }
 
     @Override
@@ -36,8 +56,22 @@ public class DispatcherFilter implements Filter {
         final String path = getValidPath(request.getPathInfo());
         final String method = getValidMethod(request.getMethod());
         final String contentType = getValidContentType(request.getContentType());
-        req.setAttribute(RequestInfo.class.getName(), new RequestInfo(path, method, contentType));
-        chain.doFilter(request, response);
+        RequestInfo info = new RequestInfo(path, method, contentType);
+        req.setAttribute(RequestInfo.class.getName(), info);
+        Dispatcher dispatcher = dispatcherMap.getDispatcher(path);
+        if (dispatcher == null) {
+            ResponseHandler.send(response, SC_BAD_REQUEST,
+                    Messages.getMessage("application.path.error", path));
+        } else if (!method.equals(dispatcher.getHttpMethod())) {
+            Object[] args = new String[]{path, method, dispatcher.getHttpMethod()};
+            ResponseHandler.send(response, SC_BAD_REQUEST,
+                    Messages.getMessage("application.httpMethod.error", args));
+        } else if (dispatcher.isSecured() && !sessionHandler.isValidSession(request)) {
+            ResponseHandler.send(response, SC_UNAUTHORIZED,
+                    Messages.getMessage("application.unauthorized.error", path));
+        } else {
+            chain.doFilter(request, response);
+        }
     }
 
     @Override

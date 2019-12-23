@@ -26,11 +26,10 @@ import java.util.*;
 @MultipartConfig(fileSizeThreshold = 1024 * 1024, maxFileSize = 1024 * 1024 * 5, maxRequestSize = 1024 * 1024 * 10)
 public class DispatcherServlet extends GenericServlet {
     private static final Logger logger = Logger.getLogger(DispatcherServlet.class);
-    private static final int SC_BAD_REQUEST = 400, SC_UNAUTHORIZED = 401;
+    private static final int SC_BAD_REQUEST = 400;
     private DispatcherMap dispatcherMap;
     private Injector injector;
     private SqlContext sqlContext;
-    private Messages messages;
 
     @Override
     public void init(ServletConfig config) throws ServletException {
@@ -38,7 +37,6 @@ public class DispatcherServlet extends GenericServlet {
         injector = (Injector)config.getServletContext().getAttribute(Injector.class.getName());
         dispatcherMap = injector.getInstance(DispatcherMap.class);
         sqlContext = injector.getInstance(SqlContext.class);
-        messages = injector.getInstance(Messages.class);
         if (logger.isDebugEnabled()) {
             ContextResource resource = injector.getInstance(ContextResource.class);
             logger.info(resource.toString());
@@ -52,22 +50,6 @@ public class DispatcherServlet extends GenericServlet {
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) resp;
         Dispatcher dispatcher = dispatcherMap.getDispatcher(info.getPath());
-        if (dispatcher == null) {
-            ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.path.error", info.getPath()));
-            return;
-        }
-        if (!info.getMethod().equals(dispatcher.getHttpMethod())) {
-            Object[] args = new String[]{info.getPath(), info.getMethod(), dispatcher.getHttpMethod()};
-            ResponseHandler.send(response, SC_BAD_REQUEST, getMessage("application.httpMethod.error", args));
-            return;
-        }
-        if (dispatcher.isSecured()) {
-            HttpSession session = request.getSession(false);
-            if (session == null || session.getId() == null) {
-                ResponseHandler.send(response, SC_UNAUTHORIZED, getMessage("application.unauthorized.error", info.getPath()));
-                return;
-            }
-        }
         RequestReader reader;
         try {
             reader = new RequestReader(request, dispatcher.getPath());
@@ -118,9 +100,9 @@ public class DispatcherServlet extends GenericServlet {
                 logger.error("Unknown http service result type is received : " + dispatcher.toString());
             }
             if (result instanceof JsonResult) {
-                new JsonHandler(response, info.getPath(), messages).setSqlContext(sqlContext).send((JsonResult) result);
+                new JsonHandler(response, info.getPath()).setSqlContext(sqlContext).send((JsonResult) result);
             } else if (result instanceof CsvResult) {
-                new CsvHandler(response, info.getPath(), messages).sendAsCsv((CsvResult) result);
+                new CsvHandler(response, info.getPath()).sendAsCsv((CsvResult) result);
             } else if (result instanceof ServletResult) {
                 ServletResult svtResult = (ServletResult) result;
                 if (svtResult.getMessageCode() != null) {
@@ -148,7 +130,7 @@ public class DispatcherServlet extends GenericServlet {
     }
 
     private String getMessage(String code, Object... args) {
-        return messages.getMessage(code, args);
+        return Messages.getMessage(code, args);
     }
 
     private String getRootCause(Throwable throwable) {

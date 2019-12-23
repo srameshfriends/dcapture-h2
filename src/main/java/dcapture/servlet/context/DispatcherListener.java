@@ -39,7 +39,7 @@ public class DispatcherListener implements ServletContextListener {
     private void configureBinder(ServletContext context, Binder binder) {
         ContextResource resource = ContextResource.get(context);
         String defaultLanguage = resource.getSetting("language");
-        Messages messages = getMessages(context, resource.getMessagePaths(), defaultLanguage);
+        loadMessages(context, resource.getMessagePaths(), defaultLanguage);
         List<HttpModule> httpModules = getHttpModules(context.getInitParameter("http-modules"));
         SqlDatabase sqlDatabase = getSqlDatabase(context, resource);
         if (sqlDatabase == null) {
@@ -65,7 +65,6 @@ public class DispatcherListener implements ServletContextListener {
         binder.bind(SqlContext.class).toInstance(sqlContext);
         binder.bind(SqlDatabase.class).toInstance(sqlDatabase);
         binder.bind(ContextResource.class).toInstance(resource);
-        binder.bind(Messages.class).toInstance(messages);
         try {
             httpServiceList.forEach(binder::bind);
             binder.bind(DispatcherMap.class).toInstance(DispatcherMap.create(httpServiceList));
@@ -97,18 +96,16 @@ public class DispatcherListener implements ServletContextListener {
         return httpModules;
     }
 
-    private Messages getMessages(ServletContext context, Set<String> paths, String defaultLanguage) {
-        Messages messages = new Messages();
-        messages.setLanguage(defaultLanguage);
+    private void loadMessages(ServletContext context, Set<String> paths, String defaultLanguage) {
+        Messages.setLanguage(defaultLanguage);
         try {
-            messages.loadProperties(context, paths, true);
+            Messages.loadProperties(context, paths, true);
         } catch (IOException ex) {
             logger.error("Message sources loading error : " + ex.getMessage());
             if (logger.isDebugEnabled()) {
                 ex.printStackTrace();
             }
         }
-        return messages;
     }
 
     private HttpModule getHttpModule(String name) {
