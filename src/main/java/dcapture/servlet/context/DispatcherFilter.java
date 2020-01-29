@@ -5,7 +5,6 @@ import dcapture.api.support.Messages;
 import dcapture.api.support.SessionHandler;
 import io.github.pustike.inject.Injector;
 import org.apache.log4j.Logger;
-import sun.security.krb5.internal.PAData;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;

@@ -47,13 +47,17 @@ public class DispatcherListener implements ServletContextListener {
             return;
         }
         SqlContext sqlContext = sqlDatabase.getContext();
+        binder.bind(SqlContext.class).toInstance(sqlContext);
+        binder.bind(SqlDatabase.class).toInstance(sqlDatabase);
+        binder.bind(ContextResource.class).toInstance(resource);
         logger.info("Http modules are configured (" + httpModules.size() + ")");
         List<Class<?>> entityList = new ArrayList<>();
         List<Class<?>> httpServiceList = new ArrayList<>();
-        for (HttpModule httpModule : httpModules) {
+        for(HttpModule httpModule : httpModules) {
             logger.info(httpModule);
             List<Class<?>> entities = httpModule.getEntityList();
             List<Class<?>> httpServices = httpModule.getHttpServiceList();
+            httpModule.configureBinder(binder);
             if (entities != null) {
                 entityList.addAll(entities);
             }
@@ -62,9 +66,6 @@ public class DispatcherListener implements ServletContextListener {
             }
         }
         SqlFactory.setEntityList(sqlContext, entityList);
-        binder.bind(SqlContext.class).toInstance(sqlContext);
-        binder.bind(SqlDatabase.class).toInstance(sqlDatabase);
-        binder.bind(ContextResource.class).toInstance(resource);
         try {
             httpServiceList.forEach(binder::bind);
             binder.bind(DispatcherMap.class).toInstance(DispatcherMap.create(httpServiceList));

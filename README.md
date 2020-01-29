@@ -132,3 +132,9 @@ RID16
 - >Dispatcher initialize listener and authentication filter are added.
 - >Custom token based authentication updated
 - >Two factor authentication to be updated 
+
+##### Jan-2020
+
+RID17
+
+- >Dispatcher Listener configure binder called during initialize
