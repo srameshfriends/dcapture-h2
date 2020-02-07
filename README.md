@@ -138,3 +138,11 @@ RID16
 RID17
 
 - >Dispatcher Listener configure binder called during initialize
+
+##### Feb-2020
+
+RID18
+
+- >dcapture-servlet Project are moved to dcapture-projects. 
+- >No more update on this repository. dcapture-servlet url as follow
+- >https://github.com/srameshfriends/dcapture-projects/tree/master/dcapture-servlet   

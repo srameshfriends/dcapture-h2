@@ -9,11 +9,11 @@
     <version>1.0</version>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.release>1.8</java.release>
+        <java.compiler>1.8</java.compiler>
         <dcapture>1.0</dcapture>
-        <jetty>9.4.14.v20181114</jetty>
+        <jetty>9.4.26.v20200117</jetty>
     </properties>
 
     <dependencies>
@@ -24,26 +24,6 @@
             <version>${dcapture}</version>
         </dependency>
 
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-api</artifactId>
-            <version>0.10.7</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-impl</artifactId>
-            <version>0.10.7</version>
-            <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId>
-            <version>0.10.7</version>
-            <scope>runtime</scope>
-        </dependency>
-
     </dependencies>
 
     <build>
@@ -52,20 +32,19 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.5.1</version>
+                    <version>3.7.0</version>
                     <configuration>
-                        <executable>/usr/lib/jvm/java-8-oracle/bin/javac</executable>
-                        <source>1.8</source>
-                        <target>1.8</target>
+                        <source>${java.release}</source>
+                        <target>${java.compiler}</target>
                     </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>3.2.0</version>
                     <configuration>
                         <archive>
-                            <index/>
+                            <index>true</index>
                             <manifest>
                                 <addClasspath>true</addClasspath>
                             </manifest>
