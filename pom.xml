@@ -5,23 +5,49 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>dcapture</groupId>
-    <artifactId>dcapture-servlet</artifactId>
-    <version>1.0</version>
+    <artifactId>dcapture-h2</artifactId>
+    <version>1.1</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.release>1.8</java.release>
-        <java.compiler>1.8</java.compiler>
-        <dcapture>1.0</dcapture>
-        <jetty>9.4.26.v20200117</jetty>
+        <java.release>11</java.release>
+        <java.compiler>11</java.compiler>
+        <h2>1.4.200</h2>
+        <servlet>5.0.0</servlet>
+        <jetty>11.0.6</jetty>
+        <slf4j>2.0.0-alpha1</slf4j>
     </properties>
 
     <dependencies>
 
         <dependency>
-            <groupId>dcapture</groupId>
-            <artifactId>dcapture-api</artifactId>
-            <version>${dcapture}</version>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>${jetty}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlet</artifactId>
+            <version>${jetty}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>${slf4j}</version>
         </dependency>
 
     </dependencies>
@@ -32,7 +58,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.7.0</version>
+                    <version>3.8.1</version>
                     <configuration>
                         <source>${java.release}</source>
                         <target>${java.compiler}</target>
@@ -55,6 +81,22 @@
                             </manifestEntries>
                         </archive>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>3.1.2</version>
+                    <executions>
+                        <execution>
+                            <phase>install</phase>
+                            <goals>
+                                <goal>copy-dependencies</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${project.build.directory}</outputDirectory>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
