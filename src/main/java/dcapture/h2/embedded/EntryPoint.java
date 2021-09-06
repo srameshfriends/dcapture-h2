@@ -1,4 +1,4 @@
-package dcapture.h2.dev;
+package dcapture.h2.embedded;
 
 import dcapture.h2.service.H2ContextListener;
 import dcapture.h2.service.H2ServiceServlet;
@@ -8,11 +8,12 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketAddress;
+import java.nio.charset.StandardCharsets;
 
 public class EntryPoint {
     private static final Logger logger = Logger.getLogger(EntryPoint.class);
@@ -71,19 +72,54 @@ public class EntryPoint {
 
         @Override
         public void run() {
-            System.out.println("H2 database stop service port " + H2ContextListener.SHUTDOWN_PORT);
-            Socket accept;
             try {
-                accept = socket.accept();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(accept.getInputStream()));
-                reader.readLine();
-                logger.info("Going to stop H2 jetty server.");
+                Socket accept = socket.accept();
+                DataInputStream inputStream = new DataInputStream(accept.getInputStream());
+                DataOutputStream outputStream = new DataOutputStream(accept.getOutputStream());
+                String command = "H2 service " + inputStream.readUTF() + "  command received.";
+                logger.info(command);
+                outputStream.writeUTF(command);
+                outputStream.flush();
                 server.stop();
-                accept.close();
-                socket.close();
-                logger.info("H2 jetty server stopped.");
-            } catch(Exception e) {
-                throw new RuntimeException(e);
+                close(outputStream);
+                close(inputStream);
+                close(accept);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+
+        private String getString(byte[] allBytes) {
+            return allBytes == null ? "Unknown" : new String(allBytes, StandardCharsets.UTF_8);
+        }
+
+        private void close(DataInputStream inputStream) {
+            if(inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (Exception ex) {
+                    // ignore
+                }
+            }
+        }
+
+        private void close(DataOutputStream outputStream) {
+            if(outputStream != null) {
+                try {
+                    outputStream.close();
+                } catch (Exception ex) {
+                    // ignore
+                }
+            }
+        }
+
+        private void close(Socket accept) {
+            try {
+                if(accept != null) {
+                    accept.close();
+                }
+            } catch (Exception ex) {
+                // ignore
             }
         }
     }

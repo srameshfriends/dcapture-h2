@@ -23,6 +23,12 @@ public class H2ServiceServlet extends HttpServlet {
             logger.info(info1);
             resp.getWriter().write(info1);
             resp.getWriter().close();
+        }  else if("/status".equals(req.getPathInfo())) {
+            String[] info3 = H2ContextListener.statusDatabaseService(req.getServletContext());
+            resp.getWriter().write(info3[0]);
+            resp.getWriter().write("\n");
+            resp.getWriter().write(info3[1]);
+            resp.getWriter().close();
         } else if("/stop".equals(req.getPathInfo())) {
             String info2 = H2ContextListener.stopDatabaseService(req.getServletContext());
             if(info2 == null) {
@@ -30,12 +36,6 @@ public class H2ServiceServlet extends HttpServlet {
             }
             logger.info(info2);
             resp.getWriter().write(info2);
-            resp.getWriter().close();
-        } else if("/status".equals(req.getPathInfo())) {
-            String[] info3 = H2ContextListener.statusDatabaseService(req.getServletContext());
-            resp.getWriter().write(info3[0]);
-            resp.getWriter().write("\n");
-            resp.getWriter().write(info3[1]);
             resp.getWriter().close();
         } else {
             resp.getWriter().write(req.getPathInfo() + " : service not allowed.");

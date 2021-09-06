@@ -15,3 +15,26 @@
 2. H2 Database   
 3. jetty-server, jetty-servlet (Development Only)
 4. Log4j
+
+### Build
+
+Command prompt enter the following command and copy the dependency files into lib directory if your package.
+
+```
+ mvn dependency:copy-dependencies
+```
+
+Maven jar plugin configuration have to change mainClass ether EntryPoint or ExitPoint.
+
+pom.xml (startup.jar)
+```
+ <manifest>
+    <mainClass>dcapture.h2.embedded.EntryPoint</mainClass>
+ </manifest>
+```
+pom.xml (shutdown.jar)
+```
+ <manifest>
+    <mainClass>dcapture.h2.embedded.ExitPoint</mainClass>
+ </manifest>
+```

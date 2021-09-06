@@ -84,7 +84,7 @@ public class H2ContextListener implements ServletContextListener {
         Server tcpServer = (Server)context.getAttribute(TcpServer.class.getName());
         Server webServer = (Server)context.getAttribute(WebServer.class.getName());
         try {
-            logger.info("Going to stop tcp server.");
+            logger.info("H2 tcp server is going to stop.");
             if(tcpServer != null && tcpServer.isRunning(true)) {
                 tcpServer.shutdown();
                 tcpServer.stop();
@@ -93,7 +93,7 @@ public class H2ContextListener implements ServletContextListener {
                 logger.info("H2 tcp server is not running.");
             }
 
-            logger.info("Going to stop web server");
+            logger.info("H2 web server is going to stop.");
             if(webServer != null && webServer.isRunning(true)) {
                 webServer.shutdown();
                 webServer.stop();
