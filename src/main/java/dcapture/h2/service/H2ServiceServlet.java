@@ -37,6 +37,15 @@ public class H2ServiceServlet extends HttpServlet {
             logger.info(info2);
             resp.getWriter().write(info2);
             resp.getWriter().close();
+        } else if("/create".equals(req.getPathInfo())) {
+            String name = req.getParameter("name");
+            if(name == null || name.trim().isBlank()) {
+                resp.getWriter().write("Database name should not be empty.");
+            } else {
+                String msg = H2ContextListener.createDatabase(name.trim(), "sa", "Teamwork");
+                resp.getWriter().write(msg);
+            }
+            resp.getWriter().close();
         } else {
             resp.getWriter().write(req.getPathInfo() + " : service not allowed.");
             resp.getWriter().close();

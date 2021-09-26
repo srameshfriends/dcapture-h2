@@ -21,28 +21,32 @@ public class H2ContextListener implements ServletContextListener {
     private static final Logger logger = Logger.getLogger(H2ContextListener.class);
     public static final int SERVICE_PORT = 8083, SHUTDOWN_PORT = 8084;
 
+    private static String[] getModules() {
+        return new String[]{"shared", "cashbook", "materials", "project", "inventory", "purchase", "sales"};
+    }
+
     public static String startDatabaseService(ServletContext context) {
         String error = null;
         Server webServer = (Server)context.getAttribute(WebServer.class.getName());
         Server tcpServer = (Server)context.getAttribute(TcpServer.class.getName());
         try {
-            if(webServer == null) {
-                webServer = Server.createWebServer("-webAllowOthers", "-webAdminPassword", getAuthPassword(context));
-                context.setAttribute(WebServer.class.getName(), webServer);
-                logger.info("H2 web server is created.");
-            }
             if(tcpServer == null) {
                 tcpServer = Server.createTcpServer("-tcpAllowOthers", "-tcpPassword", getAuthPassword(context));
                 context.setAttribute(TcpServer.class.getName(), tcpServer);
                 logger.info("H2 tcp server is created.");
             }
-            if(!webServer.isRunning(true)) {
-                webServer.start();
-                logger.info("H2 web server started.");
+            if(webServer == null) {
+                webServer = Server.createWebServer("-webAllowOthers", "-webAdminPassword", getAuthPassword(context));
+                context.setAttribute(WebServer.class.getName(), webServer);
+                logger.info("H2 web server is created.");
             }
             if(!tcpServer.isRunning(true)) {
                 tcpServer.start();
                 logger.info("H2 tcp server started.");
+            }
+            if(!webServer.isRunning(true)) {
+                webServer.start();
+                logger.info("H2 web server started.");
             }
         } catch (SQLException exc) {
             exc.printStackTrace();
@@ -84,15 +88,6 @@ public class H2ContextListener implements ServletContextListener {
         Server tcpServer = (Server)context.getAttribute(TcpServer.class.getName());
         Server webServer = (Server)context.getAttribute(WebServer.class.getName());
         try {
-            logger.info("H2 tcp server is going to stop.");
-            if(tcpServer != null && tcpServer.isRunning(true)) {
-                tcpServer.shutdown();
-                tcpServer.stop();
-                logger.info("H2 tcp server is stopped.");
-            } else {
-                logger.info("H2 tcp server is not running.");
-            }
-
             logger.info("H2 web server is going to stop.");
             if(webServer != null && webServer.isRunning(true)) {
                 webServer.shutdown();
@@ -101,11 +96,55 @@ public class H2ContextListener implements ServletContextListener {
             }else {
                 logger.info("H2 web server is not running.");
             }
+            logger.info("H2 tcp server is going to stop.");
+            if(tcpServer != null && tcpServer.isRunning(true)) {
+                tcpServer.shutdown();
+                tcpServer.stop();
+                logger.info("H2 tcp server is stopped.");
+            } else {
+                logger.info("H2 tcp server is not running.");
+            }
         } catch (Exception exc) {
             exc.printStackTrace();
             error = exc.getMessage();
         }
         return error;
+    }
+
+    public static String createDatabase(String name, String user, String password) {
+        StringBuilder builder = new StringBuilder();
+        for(String moduleName : getModules()) {
+            String info = createDatabaseByModule(name, moduleName, user, password);
+            builder.append(info).append("\n");
+        }
+        return builder.toString();
+    }
+
+    private static String createDatabaseByModule(String name, String module, String user, String password) {
+        Connection conn = null;
+        String info = null;
+        try {
+            conn = DriverManager.getConnection(getH2EmbeddedUrl(name, module), user, password);
+            conn.close();
+            info = "Database Created : " + getH2EmbeddedUrl(name, module);
+        } catch (Exception se) {
+            se.printStackTrace();
+            info = "ERROR : Create database for (" + getH2EmbeddedUrl(name, module) + se.getMessage() + ")";
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+                logger.info(info);
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
+        }
+        return info;
+    }
+
+    private static String getH2EmbeddedUrl(String name, String module) {
+        return "jdbc:h2:~/data/" + name + "/" + module;
     }
 
     @Override

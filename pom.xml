@@ -16,9 +16,8 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <h2>1.4.200</h2>
-        <servlet>5.0.0</servlet>
         <jetty>11.0.6</jetty>
-        <slf4j>2.0.0-alpha1</slf4j>
+        <slf4j>2.0.0-alpha5</slf4j>
     </properties>
 
     <dependencies>
@@ -91,9 +90,8 @@
                         <archive>
                             <index>true</index>
                             <manifest>
-                                <classpathPrefix>lib/</classpathPrefix>
                                 <addClasspath>true</addClasspath>
-                                <mainClass>dcapture.h2.embedded.EntryPoint</mainClass>
+                                <mainClass>dcapture.h2.embedded.ExitPoint</mainClass>
                             </manifest>
                             <manifestEntries>
                                 <Specification-Title>${project.artifactId}</Specification-Title>

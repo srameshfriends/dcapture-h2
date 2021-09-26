@@ -38,3 +38,70 @@ pom.xml (shutdown.jar)
     <mainClass>dcapture.h2.embedded.ExitPoint</mainClass>
  </manifest>
 ```
+
+Copy files to ssh
+Copy single file from local to remote.
+
+ ```
+ scp sample.zip remoteuser@remoteserver:/remote/folder/
+ mv source/folder target/folder   
+ ```
+
+
+Ubuntu Change permission the directory
+
+```
+cd /opt/h2
+sudo chown -R tomcat bin/ logs/ temp/ lib/ data/
+sudo chgrp -R tomcat /opt/h2
+```
+
+Change to read permission only
+
+```
+  sudo chmod -R g-w /opt/h2/bin
+  sudo chmod -R g-w /opt/h2/lib
+```
+
+Linux Service
+
+```
+[Unit]
+Description=DCapture H2 Console
+After=network.target
+
+[Service]
+Type=forking
+
+User=tomcat
+Group=tomcat
+
+Environment="JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64"
+Environment="JAVA_OPTS=-Djava.security.egd=file:///dev/urandom -Djava.awt.headless=true"
+
+ExecStart=/opt/h2/bin/startup.sh
+ExecStop=/opt/h2/bin/shutdown.sh
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Add to ubuntu service
+
+```
+ sudo nano /etc/systemd/system/h2.service
+```
+
+Save and close the file. Make systemd aware of the new script with the command:
+
+```
+ sudo systemctl daemon-reload
+ sudo systemctl enable h2.service
+ sudo systemctl start h2.service
+```
+
+23.9.1
+
+- boostrap client side library added.
+- status, start and stop tested.
+- creating new database with given name feature id added. 

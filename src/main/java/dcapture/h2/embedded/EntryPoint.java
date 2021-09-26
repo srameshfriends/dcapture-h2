@@ -4,19 +4,22 @@ import dcapture.h2.service.H2ContextListener;
 import dcapture.h2.service.H2ServiceServlet;
 import org.apache.log4j.Logger;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.resource.Resource;
 
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 
 public class EntryPoint {
     private static final Logger logger = Logger.getLogger(EntryPoint.class);
+    private static final String RESOURCE_PATH = "/Users/ramesh/Documents/workspace/dcapture-h2/webapps";
 
     private void addInitParam(ServletContextHandler context) {
         context.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
@@ -28,8 +31,12 @@ public class EntryPoint {
     private void start() throws Exception {
         Server server = new Server(H2ContextListener.SERVICE_PORT);
         ServletContextHandler servletContext = new ServletContextHandler(ServletContextHandler.SESSIONS);
+
+        servletContext.setBaseResource(Resource.newResource(Paths.get(RESOURCE_PATH)));
         servletContext.addEventListener(new H2ContextListener());
         servletContext.setContextPath("/");
+        servletContext.insertHandler(new GzipHandler());
+        servletContext.setWelcomeFiles(new String[]{"index.html"});
         //
         ServletHolder defaultHolder = new ServletHolder(new DefaultServlet());
         servletContext.addServlet(defaultHolder, "/*");

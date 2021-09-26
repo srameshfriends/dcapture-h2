@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Database Management, H2">
+  <meta name="author" content="Ramesh">
+  <meta name="generator" content="DCapture">
+  <title>DCapture Application Management</title>
+  <link href="img/favicon.ico" rel="shortcut icon">
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/bootstrap-grid.min.css" rel="stylesheet">
+  <link href="css/bootstrap-reboot.min.css" rel="stylesheet">
+  <link href="css/bootstrap-utilities.min.css" rel="stylesheet">
+  <script src="js/remote.js"></script>
+  <script src="js/index.js"></script>
+</head>
+<body>
+
+<header>
+  <nav class="navbar navbar-expand-md fixed-top">
+    <div class="d-block w-100 text-center">
+      <h1>DCapture Application Management</h1>
+    </div>
+  </nav>
+</header>
+
+<main style="margin-top:12rem">
+  <div class="container-fluid align-content-center">
+    <div class="container">
+      <table class="table table-striped">
+        <tr style="background: #f5f5dc">
+          <td><button id="database-status" class="btn btn-link">Database Status</button></td>
+          <td><button id="database-start" class="btn btn-link">Database Start</button></td>
+          <td><button id="database-stop" class="btn btn-link">Database Stop</button></td>
+        </tr>
+      </table>
+    </div>
+    <div class="container">
+      <table class="table">
+        <tr>
+          <td><input class="form-control" id="database-name" placeholder="Name"></td>
+          <td><button id="database-create" class="btn btn-primary">Create Database</button></td>
+        </tr>
+      </table>
+    </div>
+    <div class="container">
+      <div class="text-danger text-wrap" style="font-size: 1.4rem;height:24rem" id="message-box"></div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      DCaptureAppsManagement.init(true);
+    });
+  </script>
+</main>
+
+</body>
+</html>
