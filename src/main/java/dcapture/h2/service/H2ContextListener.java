@@ -120,6 +120,29 @@ public class H2ContextListener implements ServletContextListener {
         return builder.toString();
     }
 
+    public static String createSystemDatabase(String user, String password) {
+        Connection conn = null;
+        String info = null;
+        try {
+            conn = DriverManager.getConnection(getSystemH2EmbeddedUrl(), user, password);
+            conn.close();
+            info = "Database Created : " + getSystemH2EmbeddedUrl();
+        } catch (Exception se) {
+            se.printStackTrace();
+            info = "ERROR : Create database for (" + getSystemH2EmbeddedUrl() + ") " + se.getMessage();
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+                logger.info(info);
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
+        }
+        return info;
+    }
+
     private static String createDatabaseByModule(String name, String module, String user, String password) {
         Connection conn = null;
         String info = null;
@@ -129,7 +152,7 @@ public class H2ContextListener implements ServletContextListener {
             info = "Database Created : " + getH2EmbeddedUrl(name, module);
         } catch (Exception se) {
             se.printStackTrace();
-            info = "ERROR : Create database for (" + getH2EmbeddedUrl(name, module) + se.getMessage() + ")";
+            info = "ERROR : Create database for (" + getH2EmbeddedUrl(name, module) + ") " + se.getMessage();
         } finally {
             try {
                 if (conn != null) {
@@ -145,6 +168,10 @@ public class H2ContextListener implements ServletContextListener {
 
     private static String getH2EmbeddedUrl(String name, String module) {
         return "jdbc:h2:~/data/" + name + "/" + module;
+    }
+
+    private static String getSystemH2EmbeddedUrl() {
+        return "jdbc:h2:~/data/system";
     }
 
     @Override

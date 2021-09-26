@@ -85,6 +85,22 @@ DCaptureAppsManagement.createDatabaseEvent = function (evt) {
     });
 }
 
+DCaptureAppsManagement.createSystemDBEvent = function (evt) {
+    evt.preventDefault();
+    DCaptureAppsManagement.showMessage('Create System Database ...');
+    remoteCall({
+        url: "database/create-system-db",
+        type:'GET',
+        contentType:'text',
+        error: function (msg) {
+            DCaptureAppsManagement.showMessage(msg);
+        },
+        success: function (msg) {
+            DCaptureAppsManagement.showMessage(msg);
+        }
+    });
+}
+
 DCaptureAppsManagement.init = function () {
     DCaptureAppsManagement.messageBox = document.getElementById("message-box");
     DCaptureAppsManagement.statusBtn = document.getElementById("database-status");
@@ -92,9 +108,11 @@ DCaptureAppsManagement.init = function () {
     DCaptureAppsManagement.stopBtn = document.getElementById("database-stop");
     DCaptureAppsManagement.createBtn = document.getElementById("database-create");
     DCaptureAppsManagement.databaseNameField = document.getElementById("database-name");
+    DCaptureAppsManagement.createSystemDB = document.getElementById("create-system-db");
     DCaptureAppsManagement.statusBtn.addEventListener('click', DCaptureAppsManagement.databaseStatusEvent);
     DCaptureAppsManagement.startBtn.addEventListener('click', DCaptureAppsManagement.databaseStartEvent);
     DCaptureAppsManagement.stopBtn.addEventListener('click', DCaptureAppsManagement.databaseStopEvent);
     DCaptureAppsManagement.createBtn.addEventListener('click', DCaptureAppsManagement.createDatabaseEvent);
+    DCaptureAppsManagement.createSystemDB.addEventListener('click', DCaptureAppsManagement.createSystemDBEvent);
     DCaptureAppsManagement.databaseNameField.value = "";
 }

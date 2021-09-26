@@ -100,7 +100,12 @@ Save and close the file. Make systemd aware of the new script with the command:
  sudo systemctl start h2.service
 ```
 
-23.9.1
+21.9.2
+
+- Create system database feature added.
+- Servlet response content length issue fixed.
+
+21.9.1
 
 - boostrap client side library added.
 - status, start and stop tested.
