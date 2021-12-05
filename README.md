@@ -99,6 +99,10 @@ Save and close the file. Make systemd aware of the new script with the command:
  sudo systemctl enable h2.service
  sudo systemctl start h2.service
 ```
+21.12.0
+
+- H2 database library upgraded.
+- version update to 1.2
 
 21.9.2
 

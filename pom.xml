@@ -6,7 +6,7 @@
 
     <groupId>dcapture</groupId>
     <artifactId>dcapture-h2</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -15,7 +15,7 @@
         <java.compiler>11</java.compiler>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <h2>1.4.200</h2>
+        <h2>2.0.202</h2>
         <jetty>11.0.6</jetty>
         <slf4j>2.0.0-alpha5</slf4j>
     </properties>
