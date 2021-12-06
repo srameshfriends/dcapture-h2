@@ -91,7 +91,7 @@
                             <index>true</index>
                             <manifest>
                                 <addClasspath>true</addClasspath>
-                                <mainClass>dcapture.h2.embedded.ExitPoint</mainClass>
+                                <mainClass>dcapture.h2.embedded.EntryPoint</mainClass>
                             </manifest>
                             <manifestEntries>
                                 <Specification-Title>${project.artifactId}</Specification-Title>
