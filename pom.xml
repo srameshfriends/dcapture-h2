@@ -15,9 +15,9 @@
         <java.compiler>11</java.compiler>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <h2>2.0.206</h2>
+        <h2>2.1.210</h2>
         <jetty>11.0.6</jetty>
-        <slf4j>2.0.0-alpha5</slf4j>
+        <slf4j>2.0.0-alpha6</slf4j>
     </properties>
 
     <dependencies>

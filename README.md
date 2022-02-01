@@ -103,7 +103,7 @@ Save and close the file. Make systemd aware of the new script with the command:
 22.02.0
 
 - Database backup feature added.
-- H2 database upgraded.
+- H2 database upgraded (2.1.210)
 
 21.12.0
 

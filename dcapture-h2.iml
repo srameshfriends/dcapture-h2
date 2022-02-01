@@ -18,7 +18,7 @@
     <orderEntry type="library" name="Maven: org.eclipse.jetty:jetty-io:11.0.6" level="project" />
     <orderEntry type="library" name="Maven: org.eclipse.jetty:jetty-servlet:11.0.6" level="project" />
     <orderEntry type="library" name="Maven: org.eclipse.jetty:jetty-security:11.0.6" level="project" />
-    <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:2.0.0-alpha5" level="project" />
-    <orderEntry type="library" name="Maven: org.slf4j:log4j-over-slf4j:2.0.0-alpha5" level="project" />
+    <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:2.0.0-alpha6" level="project" />
+    <orderEntry type="library" name="Maven: org.slf4j:log4j-over-slf4j:2.0.0-alpha6" level="project" />
   </component>
 </module>
