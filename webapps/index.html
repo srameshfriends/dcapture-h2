@@ -25,33 +25,66 @@
   </nav>
 </header>
 
-<main style="margin-top:12rem">
-  <div class="container-fluid align-content-center">
-    <div class="container">
-      <table class="table table-striped">
-        <tr style="background: #f5f5dc">
-          <td><button id="database-status" class="btn btn-link">Database Status</button></td>
-          <td><button id="database-start" class="btn btn-link">Database Start</button></td>
-          <td><button id="database-stop" class="btn btn-link">Database Stop</button></td>
-        </tr>
-      </table>
-    </div>
-    <div class="container">
-      <table class="table w-auto">
-        <tr>
-          <td><input class="form-control" style="width: 18rem" id="database-name" placeholder="Name"></td>
-          <td><button id="database-create" class="btn btn-primary">Create Database</button></td>
-          <td><button id="create-system-db" class="btn btn-secondary">Create System Database</button></td>
-        </tr>
-      </table>
-    </div>
-    <div class="container">
-      <div class="text-danger text-wrap" style="font-size: 1.4rem;height:24rem" id="message-box"></div>
-    </div>
+<main style="margin-top:5rem">
+    <div class="container-fluid align-content-center">
+        <div class="container">
+            <div class="text-danger text-wrap" id="message-box" style="font-size: 1.4rem;"></div>
+        </div>
+        <div class="container">
+            <table class="table table-striped">
+                <tr style="background: #f5f5dc">
+                    <td>
+                        <button id="database-status" class="btn btn-link">Database Status</button>
+                    </td>
+                    <td>
+                        <button id="database-start" class="btn btn-link">Database Start</button>
+                    </td>
+                    <td>
+                        <button id="database-stop" class="btn btn-link">Database Stop</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div class="container">
+            <table class="table w-auto">
+                <tr>
+                    <td><input class="form-control" style="width: 18rem" id="database-name" placeholder="Name"></td>
+                    <td>
+                        <button class="btn btn-primary" id="database-backup">Create Backup</button>
+                    </td>
+                    <td>
+                        <button class="btn btn-secondary" id="database-create">Create Database</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="backup-date">Backup Date</label>
+                        <input class="form-control" id="backup-date" type="date">
+                    </td>
+                </tr>
+            </table>
+            <table class="table w-auto">
+                <tr>
+                    <td><a class="btn btn-link" data-id="shared" href="#" id="shared-db" target="_blank"></a></td>
+                </tr>
+                <tr>
+                    <td><a class="btn btn-link" data-id="cashbook" href="#" id="cashbook-db" target="_blank"></a></td>
+                    <td><a class="btn btn-link" data-id="materials" href="#" id="materials-db" target="_blank"></a></td>
+                </tr>
+                <tr>
+                    <td><a class="btn btn-link" data-id="project" href="#" id="project-db" target="_blank"></a></td>
+                    <td><a class="btn btn-link" data-id="inventory" href="#" id="inventory-db" target="_blank"></a></td>
+                </tr>
+                <tr>
+                    <td><a class="btn btn-link" data-id="purchase" href="#" id="purchase-db" target="_blank"></a></td>
+                    <td><a class="btn btn-link" data-id="sales" href="#" id="sales-db" target="_blank"></a></td>
+                </tr>
+            </table>
+        </div>
   </div>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      DCaptureAppsManagement.init(true);
+      DCaptureAppsDB.init(true);
     });
   </script>
 </main>

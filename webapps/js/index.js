@@ -1,118 +1,194 @@
-function DCaptureAppsManagement() {
+function DCaptureAppsDB() {
 
 }
 
-DCaptureAppsManagement.showMessage = function (msg) {
+DCaptureAppsDB.showMessage = function (msg) {
     if(typeof msg === "object" && msg.responseText) {
         if(msg.responseText.includes('html')) {
-            DCaptureAppsManagement.messageBox.innerHTML = msg.responseText;
+            DCaptureAppsDB.messageBox.innerHTML = msg.responseText;
         } else {
-            DCaptureAppsManagement.messageBox.innerText = msg.responseText;
+            DCaptureAppsDB.messageBox.innerText = msg.responseText;
         }
     } else if(typeof msg === "string") {
-        DCaptureAppsManagement.messageBox.innerText = msg;
+        DCaptureAppsDB.messageBox.innerText = msg;
     } else {
-        DCaptureAppsManagement.messageBox.innerText = msg.toString();
+        DCaptureAppsDB.messageBox.innerText = msg.toString();
     }
 }
 
-DCaptureAppsManagement.databaseStatusEvent = function (evt) {
+DCaptureAppsDB.databaseStatusEvent = function (evt) {
     evt.preventDefault();
-    DCaptureAppsManagement.showMessage('Loading Database Status ...');
+    DCaptureAppsDB.showMessage('Loading Database Status ...');
     remoteCall({
         url: "database/status",
         type:'GET',
         contentType:'html/text',
         error: function (msg) {
-            DCaptureAppsManagement.showMessage(msg);
+            DCaptureAppsDB.showMessage(msg);
         },
         success: function (msg) {
-            DCaptureAppsManagement.showMessage(msg);
+            DCaptureAppsDB.showMessage(msg);
         }
     });
 }
 
-DCaptureAppsManagement.databaseStartEvent = function (evt) {
+DCaptureAppsDB.databaseStartEvent = function (evt) {
     evt.preventDefault();
-    DCaptureAppsManagement.showMessage('Starting Database ...');
+    DCaptureAppsDB.showMessage('Starting Database ...');
     remoteCall({
         url: "database/start",
         type:'GET',
         contentType:'html/text',
         error: function (msg) {
-            DCaptureAppsManagement.showMessage(msg);
+            DCaptureAppsDB.showMessage(msg);
         },
         success: function (msg) {
-            DCaptureAppsManagement.showMessage(msg);
+            DCaptureAppsDB.showMessage(msg);
         }
     });
 }
 
-DCaptureAppsManagement.databaseStopEvent = function (evt) {
+DCaptureAppsDB.databaseStopEvent = function (evt) {
     evt.preventDefault();
-    DCaptureAppsManagement.showMessage('Shutdown Database ...');
+    DCaptureAppsDB.showMessage('Shutdown Database ...');
     remoteCall({
         url: "database/stop",
         type:'GET',
         contentType:'html/text',
         error: function (msg) {
-            DCaptureAppsManagement.showMessage(msg);
+            DCaptureAppsDB.showMessage(msg);
         },
         success: function (msg) {
-            DCaptureAppsManagement.showMessage(msg);
+            DCaptureAppsDB.showMessage(msg);
         }
     });
 }
 
-DCaptureAppsManagement.createDatabaseEvent = function (evt) {
+DCaptureAppsDB.createDatabaseEvent = function (evt) {
     evt.preventDefault();
-    const name = DCaptureAppsManagement.databaseNameField.value.trim();
+    const name = DCaptureAppsDB.databaseNameField.value.trim();
     if(0 === name.length) {
-        DCaptureAppsManagement.showMessage('Database name should not be empty.');
+        DCaptureAppsDB.showMessage('Database name should not be empty.');
         return;
     }
-    DCaptureAppsManagement.showMessage('Create Database ...');
+    DCaptureAppsDB.showMessage('Create Database ...');
     remoteCall({
         url: "database/create?name=" + name,
         type:'GET',
         contentType:'html/text',
         error: function (msg) {
-            DCaptureAppsManagement.showMessage(msg);
+            DCaptureAppsDB.showMessage(msg);
         },
         success: function (msg) {
-            DCaptureAppsManagement.showMessage(msg);
+            DCaptureAppsDB.showMessage(msg);
         }
     });
 }
 
-DCaptureAppsManagement.createSystemDBEvent = function (evt) {
+DCaptureAppsDB.createDatabaseBackupEvent = function (evt) {
     evt.preventDefault();
-    DCaptureAppsManagement.showMessage('Create System Database ...');
+    const name = DCaptureAppsDB.databaseNameField.value.trim();
+    if(0 === name.length) {
+        DCaptureAppsDB.showMessage('Database name should not be empty.');
+        return;
+    }
     remoteCall({
-        url: "database/create-system-db",
+        url: "backup/create/" + name + "?type=offline",
         type:'GET',
         contentType:'text',
         error: function (msg) {
-            DCaptureAppsManagement.showMessage(msg);
+            DCaptureAppsDB.showMessage(msg);
         },
         success: function (msg) {
-            DCaptureAppsManagement.showMessage(msg);
+            DCaptureAppsDB.showMessage(msg);
         }
     });
-}
+};
 
-DCaptureAppsManagement.init = function () {
-    DCaptureAppsManagement.messageBox = document.getElementById("message-box");
-    DCaptureAppsManagement.statusBtn = document.getElementById("database-status");
-    DCaptureAppsManagement.startBtn = document.getElementById("database-start");
-    DCaptureAppsManagement.stopBtn = document.getElementById("database-stop");
-    DCaptureAppsManagement.createBtn = document.getElementById("database-create");
-    DCaptureAppsManagement.databaseNameField = document.getElementById("database-name");
-    DCaptureAppsManagement.createSystemDB = document.getElementById("create-system-db");
-    DCaptureAppsManagement.statusBtn.addEventListener('click', DCaptureAppsManagement.databaseStatusEvent);
-    DCaptureAppsManagement.startBtn.addEventListener('click', DCaptureAppsManagement.databaseStartEvent);
-    DCaptureAppsManagement.stopBtn.addEventListener('click', DCaptureAppsManagement.databaseStopEvent);
-    DCaptureAppsManagement.createBtn.addEventListener('click', DCaptureAppsManagement.createDatabaseEvent);
-    DCaptureAppsManagement.createSystemDB.addEventListener('click', DCaptureAppsManagement.createSystemDBEvent);
-    DCaptureAppsManagement.databaseNameField.value = "";
+DCaptureAppsDB.setBackupList = function (appsName, date, items) {
+    if(0 === items.length) {
+        DCaptureAppsDB.sharedDBLink.innerText = '';
+        DCaptureAppsDB.cashbookDBLink.innerText = '';
+        DCaptureAppsDB.materialsDBLink.innerText = '';
+        DCaptureAppsDB.projectDBLink.innerText = '';
+        DCaptureAppsDB.inventoryDBLink.innerText = '';
+        DCaptureAppsDB.purchaseDBLink.innerText = '';
+        DCaptureAppsDB.salesDBLink.innerText = '';
+        DCaptureAppsDB.sharedDBLink.setAttribute('href', '#');
+        DCaptureAppsDB.cashbookDBLink.setAttribute('href', '#');
+        DCaptureAppsDB.materialsDBLink.setAttribute('href', '#');
+        DCaptureAppsDB.projectDBLink.setAttribute('href', '#');
+        DCaptureAppsDB.inventoryDBLink.setAttribute('href', '#');
+        DCaptureAppsDB.purchaseDBLink.setAttribute('href', '#');
+        DCaptureAppsDB.salesDBLink.setAttribute('href', '#');
+    } else {
+        DCaptureAppsDB.sharedDBLink.innerText = 'shared.zip';
+        DCaptureAppsDB.cashbookDBLink.innerText = 'cashbook.zip';
+        DCaptureAppsDB.materialsDBLink.innerText = 'materials.zip';
+        DCaptureAppsDB.projectDBLink.innerText = 'project.zip';
+        DCaptureAppsDB.inventoryDBLink.innerText = 'inventory.zip';
+        DCaptureAppsDB.purchaseDBLink.innerText = 'purchase.zip';
+        DCaptureAppsDB.salesDBLink.innerText = 'sales.zip';
+        let prefix = '/backup/download/' + appsName + '?date=' + date + '&db=';
+        let href = window.location.href;
+        if(0 > href.indexOf('localhost')) {
+            prefix = '/dcapture-h2/backup/download/' + appsName + '?date=' + date + '&db=';
+        }
+        DCaptureAppsDB.sharedDBLink.setAttribute('href', prefix + 'shared');
+        DCaptureAppsDB.cashbookDBLink.setAttribute('href', prefix + 'cashbook');
+        DCaptureAppsDB.materialsDBLink.setAttribute('href', prefix + 'materials');
+        DCaptureAppsDB.projectDBLink.setAttribute('href', prefix + 'project');
+        DCaptureAppsDB.inventoryDBLink.setAttribute('href', prefix + 'inventory');
+        DCaptureAppsDB.purchaseDBLink.setAttribute('href', prefix + 'purchase');
+        DCaptureAppsDB.salesDBLink.setAttribute('href', prefix + 'sales');
+    }
+};
+
+DCaptureAppsDB.changeBackupDateEvent = function (evt) {
+    evt.preventDefault();
+    const name = DCaptureAppsDB.databaseNameField.value.trim();
+    if(0 === name.length) {
+        DCaptureAppsDB.showMessage('Database name should not be empty.');
+        return;
+    }
+    const date = DCaptureAppsDB.backupDateFld.value;
+    remoteCall({
+        url: "backup/load-backup/" + name + "?date=" + date,
+        type:'GET',
+        contentType:'text',
+        error: function (msg) {
+            DCaptureAppsDB.showMessage(msg);
+            DCaptureAppsDB.setBackupList(name, date, "");
+        },
+        success: function (body) {
+            DCaptureAppsDB.setBackupList(name, date, body);
+        }
+    });
+};
+
+DCaptureAppsDB.init = function () {
+    DCaptureAppsDB.messageBox = document.getElementById("message-box");
+    DCaptureAppsDB.statusBtn = document.getElementById("database-status");
+    DCaptureAppsDB.startBtn = document.getElementById("database-start");
+    DCaptureAppsDB.stopBtn = document.getElementById("database-stop");
+    DCaptureAppsDB.createBtn = document.getElementById("database-create");
+    DCaptureAppsDB.databaseNameField = document.getElementById("database-name");
+    DCaptureAppsDB.databaseBackupBtn = document.getElementById("database-backup");
+    DCaptureAppsDB.backupDateFld = document.getElementById("backup-date");
+    //
+    DCaptureAppsDB.sharedDBLink = document.getElementById("shared-db");
+    DCaptureAppsDB.cashbookDBLink = document.getElementById("cashbook-db");
+    DCaptureAppsDB.materialsDBLink = document.getElementById("materials-db");
+    DCaptureAppsDB.projectDBLink = document.getElementById("project-db");
+    DCaptureAppsDB.inventoryDBLink = document.getElementById("inventory-db");
+    DCaptureAppsDB.purchaseDBLink = document.getElementById("purchase-db");
+    DCaptureAppsDB.salesDBLink = document.getElementById("sales-db");
+    //
+    DCaptureAppsDB.statusBtn.addEventListener('click', DCaptureAppsDB.databaseStatusEvent);
+    DCaptureAppsDB.startBtn.addEventListener('click', DCaptureAppsDB.databaseStartEvent);
+    DCaptureAppsDB.stopBtn.addEventListener('click', DCaptureAppsDB.databaseStopEvent);
+    DCaptureAppsDB.createBtn.addEventListener('click', DCaptureAppsDB.createDatabaseEvent);
+    DCaptureAppsDB.databaseBackupBtn.addEventListener('click', DCaptureAppsDB.createDatabaseBackupEvent);
+    DCaptureAppsDB.backupDateFld.addEventListener('change', DCaptureAppsDB.changeBackupDateEvent);
+    DCaptureAppsDB.databaseNameField.value = "";
 }

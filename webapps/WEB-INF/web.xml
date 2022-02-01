@@ -38,6 +38,16 @@
         <param-value>3d3dd5957b8be3e36366431a0595c3ca</param-value>
     </context-param>
 
+    <context-param>
+        <param-name>backup_root</param-name>
+        <param-value>/srv/tomcat/backup</param-value>
+    </context-param>
+
+    <context-param>
+        <param-name>database_root</param-name>
+        <param-value>/opt/tomcat/data</param-value>
+    </context-param>
+
     <listener>
         <listener-class>
             dcapture.h2.service.H2ContextListener
@@ -50,9 +60,20 @@
         <load-on-startup>1</load-on-startup>
     </servlet>
 
+    <servlet>
+        <servlet-name>H2BackupServlet</servlet-name>
+        <servlet-class>dcapture.h2.service.H2BackupServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
     <servlet-mapping>
         <servlet-name>H2ServiceServlet</servlet-name>
         <url-pattern>/database/*</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>H2BackupServlet</servlet-name>
+        <url-pattern>/backup/*</url-pattern>
     </servlet-mapping>
 
     <session-config>

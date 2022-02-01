@@ -1,5 +1,6 @@
 package dcapture.h2.embedded;
 
+import dcapture.h2.service.H2BackupServlet;
 import dcapture.h2.service.H2ContextListener;
 import dcapture.h2.service.H2ServiceServlet;
 import org.apache.log4j.Logger;
@@ -10,7 +11,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -26,8 +28,9 @@ public class EntryPoint {
         context.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
         context.setInitParameter("key", "f834227e-a3a8-4dd2-a5ce-8ebb84b9b1ee");
         context.setInitParameter("password", "3d3dd5957b8be3e36366431a0595c3ca");
+        context.setInitParameter("database_root", "/Users/ramesh/data");
+        context.setInitParameter("backup_root", "/Users/ramesh/backup-sample");
     }
-
     private void start() throws Exception {
         Server server = new Server(H2ContextListener.SERVICE_PORT);
         ServletContextHandler servletContext = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -42,6 +45,8 @@ public class EntryPoint {
         servletContext.addServlet(defaultHolder, "/*");
         ServletHolder refreshHolder = new ServletHolder(new H2ServiceServlet());
         servletContext.addServlet(refreshHolder, "/database/*");
+        ServletHolder backupHolder = new ServletHolder(new H2BackupServlet());
+        servletContext.addServlet(backupHolder, "/backup/*");
         addInitParam(servletContext);
         server.setHandler(servletContext);
         servletContext.setAttribute(Server.class.getName(), server);
