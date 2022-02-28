@@ -14,7 +14,7 @@
 1. java 11
 2. H2 Database   
 3. jetty-server, jetty-servlet (Development Only)
-4. Log4j
+4. slf4j-jdk14
 
 ### Build
 
@@ -100,7 +100,11 @@ Save and close the file. Make systemd aware of the new script with the command:
  sudo systemctl start h2.service
 ```
 
-22.02.0
+22.02.2
+
+- Database restore feature added. Now it will work only with same server.
+
+22.02.1
 
 - Database backup feature added.
 - H2 database upgraded (2.1.210)

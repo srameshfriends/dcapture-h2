@@ -66,6 +66,12 @@
         <load-on-startup>1</load-on-startup>
     </servlet>
 
+    <servlet>
+        <servlet-name>H2RestoreServlet</servlet-name>
+        <servlet-class>dcapture.h2.service.H2RestoreServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
     <servlet-mapping>
         <servlet-name>H2ServiceServlet</servlet-name>
         <url-pattern>/database/*</url-pattern>
@@ -74,6 +80,11 @@
     <servlet-mapping>
         <servlet-name>H2BackupServlet</servlet-name>
         <url-pattern>/backup/*</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>H2RestoreServlet</servlet-name>
+        <url-pattern>/restore/*</url-pattern>
     </servlet-mapping>
 
     <session-config>

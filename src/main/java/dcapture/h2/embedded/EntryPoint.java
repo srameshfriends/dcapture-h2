@@ -2,14 +2,16 @@ package dcapture.h2.embedded;
 
 import dcapture.h2.service.H2BackupServlet;
 import dcapture.h2.service.H2ContextListener;
+import dcapture.h2.service.H2RestoreServlet;
 import dcapture.h2.service.H2ServiceServlet;
-import org.apache.log4j.Logger;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -20,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 
 public class EntryPoint {
-    private static final Logger logger = Logger.getLogger(EntryPoint.class);
+    private static final Logger logger = LoggerFactory.getLogger(EntryPoint.class);
     private static final String RESOURCE_PATH = "/Users/ramesh/Documents/workspace/dcapture-h2/webapps";
 
     private void addInitParam(ServletContextHandler context) {
@@ -47,6 +49,8 @@ public class EntryPoint {
         servletContext.addServlet(refreshHolder, "/database/*");
         ServletHolder backupHolder = new ServletHolder(new H2BackupServlet());
         servletContext.addServlet(backupHolder, "/backup/*");
+        ServletHolder restoreHolder = new ServletHolder(new H2RestoreServlet());
+        servletContext.addServlet(restoreHolder, "/restore/*");
         addInitParam(servletContext);
         server.setHandler(servletContext);
         servletContext.setAttribute(Server.class.getName(), server);

@@ -3,13 +3,14 @@ package dcapture.h2.service;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 
 public class H2ServiceServlet extends HttpServlet {
-    private static final Logger logger = Logger.getLogger(H2ServiceServlet.class);
+    private static final Logger logger = LoggerFactory.getLogger(H2ServiceServlet.class);
     private static final String ENCODING = "UTF-8";
 
     @Override

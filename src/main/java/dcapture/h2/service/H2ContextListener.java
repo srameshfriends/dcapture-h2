@@ -3,10 +3,11 @@ package dcapture.h2.service;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
-import org.apache.log4j.Logger;
 import org.h2.server.TcpServer;
 import org.h2.server.web.WebServer;
 import org.h2.tools.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -14,11 +15,13 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Arrays;
 
 public class H2ContextListener implements ServletContextListener {
-    private static final Logger logger = Logger.getLogger(H2ContextListener.class);
+    private static final Logger logger = LoggerFactory.getLogger(H2ContextListener.class);
     public static final int SERVICE_PORT = 8083, SHUTDOWN_PORT = 8084;
 
     private static String[] getModules() {

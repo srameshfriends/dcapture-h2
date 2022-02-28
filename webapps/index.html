@@ -48,24 +48,32 @@
         <div class="container">
             <table class="table w-auto">
                 <tr>
-                    <td><input class="form-control" style="width: 18rem" id="database-name" placeholder="Name"></td>
+                    <td><input class="form-control" id="create-database-fld" placeholder="Create Database"
+                               style="width: 16rem"></td>
                     <td>
-                        <button class="btn btn-primary" id="database-backup">Create Backup</button>
-                    </td>
-                    <td>
-                        <button class="btn btn-secondary" id="database-create">Create Database</button>
+                        <button class="btn btn-secondary" id="create-database-btn" style="width:12rem">Create Database
+                        </button>
                     </td>
                 </tr>
                 <tr>
+                    <td><input class="form-control" id="create-backup-fld" placeholder="Create Backup"
+                               style="width: 16rem"></td>
                     <td>
-                        <label for="backup-date">Backup Date</label>
-                        <input class="form-control" id="backup-date" type="date">
+                        <button class="btn btn-primary" id="create-backup-btn" style="width:12rem">Create Backup
+                        </button>
                     </td>
+                </tr>
+                <tr>
+                    <td><input class="form-control" id="db-apps-fld" placeholder="Backup Application"
+                               style="width: 16rem"></td>
+                    <td><input class="form-control" id="db-backup-date-fld" placeholder="Backup Date"
+                               style="width:12rem" type="date"></td>
                 </tr>
             </table>
             <table class="table w-auto">
                 <tr>
                     <td><a class="btn btn-link" data-id="shared" href="#" id="shared-db" target="_blank"></a></td>
+                    <td></td>
                 </tr>
                 <tr>
                     <td><a class="btn btn-link" data-id="cashbook" href="#" id="cashbook-db" target="_blank"></a></td>
@@ -78,6 +86,25 @@
                 <tr>
                     <td><a class="btn btn-link" data-id="purchase" href="#" id="purchase-db" target="_blank"></a></td>
                     <td><a class="btn btn-link" data-id="sales" href="#" id="sales-db" target="_blank"></a></td>
+                </tr>
+            </table>
+            <table class="table w-auto">
+                <tr>
+                    <td><input class="form-control" id="restore-apps-fld" placeholder="Restore Apps Name"
+                               style="width: 16rem"></td>
+
+                    <td><input class="form-control" id="restore-apps-date-fld" placeholder="Restore Apps Date"
+                               style="width:12rem" type="date"></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>
+                    </td>
+                    <td>
+                        <button class="btn btn-secondary" id="restore-apps-btn" style="width:12rem">Restore
+                            Application
+                        </button>
+                    </td>
                 </tr>
             </table>
         </div>

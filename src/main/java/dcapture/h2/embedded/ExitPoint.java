@@ -1,14 +1,16 @@
 package dcapture.h2.embedded;
 
 import dcapture.h2.service.H2ContextListener;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 
 public class ExitPoint {
-    private static final Logger logger = Logger.getLogger(ExitPoint.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExitPoint.class);
 
     public static void main(String... args) {
         Socket socket = null;

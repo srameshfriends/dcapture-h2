@@ -66,7 +66,7 @@ DCaptureAppsDB.databaseStopEvent = function (evt) {
 
 DCaptureAppsDB.createDatabaseEvent = function (evt) {
     evt.preventDefault();
-    const name = DCaptureAppsDB.databaseNameField.value.trim();
+    const name = DCaptureAppsDB.createDBFld.value.trim();
     if(0 === name.length) {
         DCaptureAppsDB.showMessage('Database name should not be empty.');
         return;
@@ -87,7 +87,7 @@ DCaptureAppsDB.createDatabaseEvent = function (evt) {
 
 DCaptureAppsDB.createDatabaseBackupEvent = function (evt) {
     evt.preventDefault();
-    const name = DCaptureAppsDB.databaseNameField.value.trim();
+    const name = DCaptureAppsDB.createBackupFld.value.trim();
     if(0 === name.length) {
         DCaptureAppsDB.showMessage('Database name should not be empty.');
         return;
@@ -146,7 +146,7 @@ DCaptureAppsDB.setBackupList = function (appsName, date, items) {
 
 DCaptureAppsDB.changeBackupDateEvent = function (evt) {
     evt.preventDefault();
-    const name = DCaptureAppsDB.databaseNameField.value.trim();
+    const name = DCaptureAppsDB.backupAppsFld.value.trim();
     if(0 === name.length) {
         DCaptureAppsDB.showMessage('Database name should not be empty.');
         return;
@@ -166,15 +166,45 @@ DCaptureAppsDB.changeBackupDateEvent = function (evt) {
     });
 };
 
+DCaptureAppsDB.onDatabaseRestoreEvent = function (evt) {
+    evt.preventDefault();
+    const name = DCaptureAppsDB.restoreAppsFld.value.trim();
+    if(0 === name.length) {
+        DCaptureAppsDB.showMessage('Restore database should not be empty.');
+        return;
+    }
+    const date = DCaptureAppsDB.restoreAppsDateFld.value;
+    if(0 === date.length) {
+        DCaptureAppsDB.showMessage('Restore date should not be empty.');
+        return;
+    }
+    remoteCall({
+        url: "restore/execute/" + name + "?date=" + date,
+        type:'GET',
+        contentType:'text',
+        error: function (msg) {
+            DCaptureAppsDB.showMessage(msg);
+        },
+        success: function (mg2) {
+            DCaptureAppsDB.showMessage(mg2);
+        }
+    });
+};
+
 DCaptureAppsDB.init = function () {
     DCaptureAppsDB.messageBox = document.getElementById("message-box");
     DCaptureAppsDB.statusBtn = document.getElementById("database-status");
     DCaptureAppsDB.startBtn = document.getElementById("database-start");
     DCaptureAppsDB.stopBtn = document.getElementById("database-stop");
-    DCaptureAppsDB.createBtn = document.getElementById("database-create");
-    DCaptureAppsDB.databaseNameField = document.getElementById("database-name");
-    DCaptureAppsDB.databaseBackupBtn = document.getElementById("database-backup");
-    DCaptureAppsDB.backupDateFld = document.getElementById("backup-date");
+    DCaptureAppsDB.createDBBtn = document.getElementById("create-database-btn");
+    DCaptureAppsDB.createDBFld = document.getElementById("create-database-fld");
+    DCaptureAppsDB.createBackupFld = document.getElementById("create-backup-fld");
+    DCaptureAppsDB.createBackupBtn = document.getElementById("create-backup-btn");
+    DCaptureAppsDB.backupAppsFld = document.getElementById("db-apps-fld");
+    DCaptureAppsDB.backupDateFld = document.getElementById("db-backup-date-fld");
+    DCaptureAppsDB.restoreAppsFld = document.getElementById("restore-apps-fld");
+    DCaptureAppsDB.restoreAppsDateFld = document.getElementById("restore-apps-date-fld");
+    DCaptureAppsDB.restoreAppsBtn = document.getElementById("restore-apps-btn");
     //
     DCaptureAppsDB.sharedDBLink = document.getElementById("shared-db");
     DCaptureAppsDB.cashbookDBLink = document.getElementById("cashbook-db");
@@ -187,8 +217,11 @@ DCaptureAppsDB.init = function () {
     DCaptureAppsDB.statusBtn.addEventListener('click', DCaptureAppsDB.databaseStatusEvent);
     DCaptureAppsDB.startBtn.addEventListener('click', DCaptureAppsDB.databaseStartEvent);
     DCaptureAppsDB.stopBtn.addEventListener('click', DCaptureAppsDB.databaseStopEvent);
-    DCaptureAppsDB.createBtn.addEventListener('click', DCaptureAppsDB.createDatabaseEvent);
-    DCaptureAppsDB.databaseBackupBtn.addEventListener('click', DCaptureAppsDB.createDatabaseBackupEvent);
+    DCaptureAppsDB.createDBBtn.addEventListener('click', DCaptureAppsDB.createDatabaseEvent);
+    DCaptureAppsDB.createBackupBtn.addEventListener('click', DCaptureAppsDB.createDatabaseBackupEvent);
     DCaptureAppsDB.backupDateFld.addEventListener('change', DCaptureAppsDB.changeBackupDateEvent);
-    DCaptureAppsDB.databaseNameField.value = "";
+    DCaptureAppsDB.restoreAppsBtn.addEventListener('click', DCaptureAppsDB.onDatabaseRestoreEvent);
+    DCaptureAppsDB.createDBFld.value = "";
+    DCaptureAppsDB.createBackupFld.value = "";
+    DCaptureAppsDB.backupAppsFld.value = "";
 }
