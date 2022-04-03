@@ -60,13 +60,17 @@ public abstract class MasterHttpServlet extends HttpServlet {
         }
     }
 
-    protected Map<String, String> getDatabaseUrls(String appsName) {
+    protected Map<String, String> getDatabaseUrlByModules(String appsName) {
         String prefix = "jdbc:h2:tcp://localhost/~/data/";
         Map<String, String> resultsMap = new HashMap<>();
         for (String db : getDatabaseNames()) {
             resultsMap.put(db, prefix + appsName + "/" + db);
         }
         return resultsMap;
+    }
+
+    protected String getDatabaseUrl(String appsName) {
+        return "jdbc:h2:tcp://localhost/~/data/" + appsName;
     }
 
     protected String[] getDatabaseNames() {
@@ -88,10 +92,16 @@ public abstract class MasterHttpServlet extends HttpServlet {
         throw new NullPointerException(msg);
     }
 
-    protected String getDBFileName(String backupFolder, String appsName, String dbName) {
+    protected String getDBFileNameByModule(String backupFolder, String appsName, String dbName) {
         String dir = getDirectory(backupFolder, appsName);
         dir = getDirectory(dir, dateFormat.format(new Date()));
         return Paths.get(dir, dbName + ".zip").toString();
+    }
+
+    protected String getDBFileName(String backupFolder, String appsName) {
+        String dir = getDirectory(backupFolder, appsName);
+        dir = getDirectory(dir, dateFormat.format(new Date()));
+        return Paths.get(dir, appsName + ".zip").toString();
     }
 
     protected List<String> getDBFileList(String dir) throws IOException {

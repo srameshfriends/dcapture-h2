@@ -3,6 +3,8 @@ package dcapture.h2.service;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.h2.tools.Backup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,10 +17,9 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 public class H2BackupServlet extends MasterHttpServlet {
-    private static final Logger logger = Logger.getLogger(H2BackupServlet.class.getSimpleName());
+    private static final Logger logger = LoggerFactory.getLogger(H2BackupServlet.class);
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -28,7 +29,9 @@ public class H2BackupServlet extends MasterHttpServlet {
             return;
         }
         String actionId = pathInfoArray[0], appsName = pathInfoArray[1];
-        String backupRoot = req.getServletContext().getInitParameter("backup_root");
+        String backupRoot = req.getServletContext().getInitParameter("database.backup");
+        String tempText = req.getParameter("is_single_database");
+        boolean isSingleDatabase = "true".equalsIgnoreCase(tempText);
         if ("load-backup".equals(actionId)) {
             String date1 = req.getParameter("date");
             showBackupList(resp, backupRoot, appsName, date1);
@@ -38,25 +41,47 @@ public class H2BackupServlet extends MasterHttpServlet {
             String database = req.getParameter("db");
             performDownload(resp, Paths.get(path), appsName, date2, database);
         } else if ("create".equals(actionId)) {
-            String databaseRoot = req.getServletContext().getInitParameter("database_root");
+            String databaseRoot = req.getServletContext().getInitParameter("database.data");
             String type = req.getParameter("type");
             boolean isOffLine = !"online".equals(type);
-            performCreateDatabase(resp, databaseRoot, backupRoot, appsName, isOffLine);
+            if (isSingleDatabase) {
+                performCreateBackup(resp, databaseRoot, backupRoot, appsName, isOffLine);
+            } else {
+                performCreateBackupByModule(resp, databaseRoot, backupRoot, appsName, isOffLine);
+            }
         } else {
             sendResponse(resp, "Service request not valid " + actionId);
         }
     }
 
-    private void performCreateDatabase(HttpServletResponse resp, String databaseRoot, String backupRoot,
-                                       String appsName, boolean isOffLine) throws IOException {
+    private void performCreateBackupByModule(HttpServletResponse resp, String databaseRoot, String backupRoot,
+                                             String appsName, boolean isOffLine) throws IOException {
         if (isOffLine) {
-            Map<String, String> databaseMap = getDatabaseUrls(appsName);
+            Map<String, String> databaseMap = getDatabaseUrlByModules(appsName);
             try {
                 for (String db : databaseMap.keySet()) {
-                    String fileName = getDBFileName(backupRoot, appsName, db);
+                    String fileName = getDBFileNameByModule(backupRoot, appsName, db);
                     logger.info("Create database backup for (" + appsName + "/" + db + ") to " + fileName);
                     Backup.execute(fileName, getDirectory(databaseRoot, appsName), db, false);
                 }
+                sendResponse(resp, "Database back up is created for " + appsName);
+            } catch (SQLException ex1) {
+                ex1.printStackTrace();
+                sendResponse(resp, "Database back up error : " + appsName + "\n" + ex1.getMessage());
+            }
+        } else {
+            sendResponse(resp, "Online database back up not yet implemented.");
+        }
+    }
+
+    private void performCreateBackup(HttpServletResponse resp, String databaseRoot, String backupRoot,
+                                     String appsName, boolean isOffLine) throws IOException {
+        if (isOffLine) {
+            String databaseUrl = getDatabaseUrl(appsName);
+            try {
+                String fileName = getDBFileName(backupRoot, appsName);
+                logger.info("Create database backup for (" + appsName + ") to " + fileName);
+                Backup.execute(fileName, getDirectory(databaseRoot, appsName), databaseUrl, false);
                 sendResponse(resp, "Database back up is created for " + appsName);
             } catch (SQLException ex1) {
                 ex1.printStackTrace();

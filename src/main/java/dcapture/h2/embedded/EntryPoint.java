@@ -30,8 +30,8 @@ public class EntryPoint {
         context.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
         context.setInitParameter("key", "f834227e-a3a8-4dd2-a5ce-8ebb84b9b1ee");
         context.setInitParameter("password", "3d3dd5957b8be3e36366431a0595c3ca");
-        context.setInitParameter("database_root", "/Users/ramesh/data");
-        context.setInitParameter("backup_root", "/Users/ramesh/backup-sample");
+        context.setInitParameter("database.data", "/Users/ramesh/data");
+        context.setInitParameter("database.backup", "/Users/ramesh/backup-sample");
     }
     private void start() throws Exception {
         Server server = new Server(H2ContextListener.SERVICE_PORT);

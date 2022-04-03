@@ -3,20 +3,21 @@ package dcapture.h2.service;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.h2.tools.Restore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class H2RestoreServlet extends MasterHttpServlet {
-    private static final Logger logger = Logger.getLogger(H2RestoreServlet.class.getSimpleName());
+    private static final Logger logger = LoggerFactory.getLogger(H2RestoreServlet.class);
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -25,21 +26,27 @@ public class H2RestoreServlet extends MasterHttpServlet {
             sendResponse(resp, "Service not supported " + Arrays.toString(pathInfoArray));
             return;
         }
+        String tempText = req.getParameter("is_single_database");
+        boolean isSingleDatabase = "true".equalsIgnoreCase(tempText);
         String actionId = pathInfoArray[0], appsName = pathInfoArray[1];
-        String backupRoot = req.getServletContext().getInitParameter("backup_root");
+        String backupRoot = req.getServletContext().getInitParameter("database.backup");
         if ("execute".equals(actionId)) {
-            String databaseRoot = req.getServletContext().getInitParameter("database_root");
+            String databaseRoot = req.getServletContext().getInitParameter("database.data");
             databaseRoot = getDirectory(databaseRoot, appsName);
             String backUpRoot = getDirectory(backupRoot, appsName);
             String date2 = req.getParameter("date");
-            performRestore(resp, appsName, Paths.get(backUpRoot), date2, Paths.get(databaseRoot));
+            if (isSingleDatabase) {
+                performRestore(resp, appsName, Paths.get(backUpRoot), date2, Paths.get(databaseRoot));
+            } else {
+                performRestoreByModule(resp, appsName, Paths.get(backUpRoot), date2, Paths.get(databaseRoot));
+            }
         } else {
             sendResponse(resp, "Service request not valid " + actionId);
         }
     }
 
-    private void performRestore(HttpServletResponse resp, String appsName, Path backupFolder, String date, Path databaseRoot)
-            throws IOException {
+    private void performRestoreByModule(HttpServletResponse resp, String appsName, Path backupFolder,
+                                        String date, Path databaseRoot) throws IOException {
         String pathText = getDirectory(backupFolder.toString(), date);
         Path path = Paths.get(pathText);
         if (!Files.exists(path)) {
@@ -75,7 +82,40 @@ public class H2RestoreServlet extends MasterHttpServlet {
             sendResponse(resp, builder.toString());
         } catch (SQLException ex) {
             logger.info(ex.getMessage());
-            if (logger.isLoggable(Level.ALL)) {
+            if (logger.isDebugEnabled()) {
+                ex.printStackTrace();
+            }
+            sendError(resp, "Application restore error : " + ex.getMessage());
+        }
+    }
+
+    private void performRestore(HttpServletResponse resp, String appsName, Path backupFolder,
+                                String date, Path databaseRoot) throws IOException {
+        String pathText = getDirectory(backupFolder.toString(), date);
+        Path path = Paths.get(pathText);
+        if (!Files.exists(path)) {
+            sendResponse(resp, "Application backup not found on : " + date);
+            return;
+        }
+        Path restoreDatePath = backupFolder.resolve(date);
+        if (!Files.exists(restoreDatePath)) {
+            sendResponse(resp, "Application backup not found at expected date : " + date);
+            return;
+        }
+        Path databasePath = restoreDatePath.resolve(appsName + ".zip");
+        if (!Files.exists(databasePath)) {
+            sendResponse(resp, "Application database (" + appsName + ") backup not found to restore.");
+            return;
+        }
+        try {
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            String msg = appsName + " : Application databases restored at " + simpleDateFormat.format(date);
+            Restore.main("-dir", databaseRoot.toString(),
+                    "-file", databasePath.toString(), "-db", appsName);
+            sendResponse(resp, msg);
+        } catch (SQLException ex) {
+            logger.info(ex.getMessage());
+            if (logger.isDebugEnabled()) {
                 ex.printStackTrace();
             }
             sendError(resp, "Application restore error : " + ex.getMessage());

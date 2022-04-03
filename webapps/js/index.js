@@ -71,9 +71,11 @@ DCaptureAppsDB.createDatabaseEvent = function (evt) {
         DCaptureAppsDB.showMessage('Database name should not be empty.');
         return;
     }
+    const isSingleDB = DCaptureAppsDB.isSingleDatabaseFld.checked;
     DCaptureAppsDB.showMessage('Create Database ...');
+    const param = '?name=' + name + '&is_single_database=' + isSingleDB;
     remoteCall({
-        url: "database/create?name=" + name,
+        url: "database/create" + param,
         type:'GET',
         contentType:'html/text',
         error: function (msg) {
@@ -205,6 +207,7 @@ DCaptureAppsDB.init = function () {
     DCaptureAppsDB.restoreAppsFld = document.getElementById("restore-apps-fld");
     DCaptureAppsDB.restoreAppsDateFld = document.getElementById("restore-apps-date-fld");
     DCaptureAppsDB.restoreAppsBtn = document.getElementById("restore-apps-btn");
+    DCaptureAppsDB.isSingleDatabaseFld = document.getElementById("is-single-database-fld");
     //
     DCaptureAppsDB.sharedDBLink = document.getElementById("shared-db");
     DCaptureAppsDB.cashbookDBLink = document.getElementById("cashbook-db");

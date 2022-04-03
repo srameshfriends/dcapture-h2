@@ -39,12 +39,12 @@
     </context-param>
 
     <context-param>
-        <param-name>backup_root</param-name>
+        <param-name>database.backup</param-name>
         <param-value>/srv/tomcat/backup</param-value>
     </context-param>
 
     <context-param>
-        <param-name>database_root</param-name>
+        <param-name>database.data</param-name>
         <param-value>/opt/tomcat/data</param-value>
     </context-param>
 

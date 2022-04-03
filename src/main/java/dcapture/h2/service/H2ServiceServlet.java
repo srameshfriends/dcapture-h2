@@ -36,15 +36,19 @@ public class H2ServiceServlet extends HttpServlet {
             sendResponse(resp, info2);
         } else if("/create".equals(req.getPathInfo())) {
             String name = req.getParameter("name");
-            if(name == null || name.trim().isBlank()) {
+            String singleDatabase = req.getParameter("is_single_database");
+            boolean isSingleDatabase = singleDatabase.equalsIgnoreCase("true");
+            if (name == null || name.trim().isBlank()) {
                 sendResponse(resp, "Database name should not be empty.");
             } else {
-                String msg = H2ContextListener.createDatabase(name.trim(), "sa", "Teamwork");
+                String msg;
+                if (isSingleDatabase) {
+                    msg = H2ContextListener.createDatabase(name.trim(), "sa", "Teamwork");
+                } else {
+                    msg = H2ContextListener.createDatabaseByModule(name.trim(), "sa", "Teamwork");
+                }
                 sendResponse(resp, msg);
             }
-        } else if("/create-system-db".equals(req.getPathInfo())) {
-            String msg = H2ContextListener.createSystemDatabase("sa", "Teamwork");
-            sendResponse(resp, msg);
         } else {
             sendResponse(resp,req.getPathInfo() + " : service not allowed.");
         }

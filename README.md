@@ -14,7 +14,7 @@
 1. java 11
 2. H2 Database   
 3. jetty-server, jetty-servlet (Development Only)
-4. slf4j-jdk14
+4. slf4j-simple
 
 ### Build
 
@@ -99,6 +99,12 @@ Save and close the file. Make systemd aware of the new script with the command:
  sudo systemctl enable h2.service
  sudo systemctl start h2.service
 ```
+
+22.04.0
+
+- version upgrade to 1.3
+- logger slf4j-simple are used instead of jdk-14
+- H2 create or backup database by each module, or single database by application choose by the administrator.
 
 22.02.2
 
